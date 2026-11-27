@@ -14,6 +14,7 @@ import path from "node:path";
 import http from "node:http";
 import crypto from "node:crypto";
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import { appel, dossierTemp, nettoyer, serveurTest, projet, session, portLibre } from "../../serveur/test/aide.ts";
 import type { Serveur } from "../../serveur/src/principal.ts";
 import { lireSortieBuild } from "../../serveur/src/builds.ts";
@@ -101,7 +102,7 @@ describe("CLI outil : apercu et avertissement d'image", () => {
 		}
 		const demandes = fs.readFileSync(captures, "utf8").trim().split("\n").map(l => JSON.parse(l));
 		assert.deepEqual(demandes.map(x => [x.largeur, x.sombre, x.mobile]), [[1280, false, false], [1280, true, false], [390, false, true]]);
-		for (const x of demandes) assert.equal(x.url, new URL("file:///" + r.json.html.replace(/\\/g, "/")).href, "le navigateur ne voit que le fichier local");
+		for (const x of demandes) assert.equal(x.url, pathToFileURL(r.json.html).href, "le navigateur ne voit que le fichier local");
 		assert.deepEqual(r.json.avertissements, []);
 		sansJeton(r.stdout + r.stderr + fs.readFileSync(captures, "utf8"));
 		// Sortie lisible : les trois chemins et le rappel de les regarder.
@@ -137,7 +138,8 @@ describe("CLI outil : apercu et avertissement d'image", () => {
 	});
 
 	test("navigateur : ni jeton ni OUTIL_JETON (environnement, arguments), tube DevTools sans port ; un navigateur qui échoue au lancement : sortie 0 et avertissement", async () => {
-		const e = envNavigateur({ PATH: "p", OUTIL_JETON: agent, Outil_Jeton: agent, AUTRE: "x" });
+		// « Outil_Jeton » est OUTIL_JETON sous Windows seulement ; sous Linux, une autre variable, que la CLI ne lit pas.
+		const e = envNavigateur({ PATH: "p", OUTIL_JETON: agent, ...(process.platform === "win32" ? { Outil_Jeton: agent } : {}), AUTRE: "x" });
 		assert.equal(e.AUTRE, "x"); sansJeton(JSON.stringify(e));
 		const a = argumentsNavigateur(path.join(tmp, "profil"));
 		assert.ok(a.includes("--headless=new") && a.includes("--remote-debugging-pipe") && !a.some(x => /remote-debugging-port/.test(x)), JSON.stringify(a));
