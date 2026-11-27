@@ -540,7 +540,7 @@ async function principal() {
 	ok(await camille.eval(`!!document.querySelector('.couloir[data-discipline="programmation"] .colonne[data-statut="a-faire"] .carte[data-id="T-1"]')`), "T-1 dans le couloir Programmation, colonne À faire");
 	ok(await camille.eval(`document.querySelectorAll(".couloir").length >= 2`), "couloirs par discipline");
 	// Étape 3.5 (§ 8.4, D1) : la phrase à dire à son agent, pour un mainteneur, avec l'hôte principal et le projet.
-	const PHRASE = `Branche ce dépôt sur le serveur de retours ${U} (projet ${PROJET}) avec la CLI outil : lance outil methode et suis le § 0.`;
+	const PHRASE = `Branche ce dépôt sur le serveur de retours ${U} (projet ${PROJET}) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : ${U}/outil).`;
 	ok(await camille.eval(`(() => { const b = document.querySelector("details[data-role=branchement]"); return !!b && b.open && /Brancher un dépôt de code/.test(b.querySelector("summary").textContent) && b.getClientRects().length > 0; })()`),
 		"Kanban (mainteneur) : bloc « Brancher un dépôt de code » visible, ouvert");
 	const phraseLue = await camille.texte("[data-role=phrase-branchement]");

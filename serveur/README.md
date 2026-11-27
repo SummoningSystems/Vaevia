@@ -172,6 +172,7 @@ Erreurs : `{ "code", "message" }` (+ `document` sur un 409, + `index`/`id` dans 
 |---|---|---|
 | `GET /` | — | liste des projets du compte connecté |
 | `GET /invitation/<jeton>` | — | formulaire « nom affiché » ; avec `WDD_URL_PAGES`, sa CSP permet aussi cette origine dans `form-action` (la redirection après l'envoi y mène) |
+| `GET /outil`, `/outil/installer.mjs`, `/outil/vaevia-outil.tar.gz` | — | hôte principal seulement : la CLI `outil` et sa méthode, à installer sur un poste d'une ligne (`node -e "fetch(…)…"`, la même dans tout terminal) ; voir `serveur/src/distribution.ts` |
 | `POST /invitation/<jeton>` | — | `nom` (formulaire ou JSON) → compte, cookie `wdd_session`, 303 vers `/p/<projet>/` (`/` pour un admin) |
 | `GET /p/<projet>/` | session | Wiki : page du dernier build, précédée du bandeau commun ; 401 « invitation requise », 403, 404 sans build (« Wiki pas encore publié », avec le bandeau ; pour un mainteneur ou un admin, pas pour un jeton, le bloc « Brancher un dépôt de code » et sa phrase, comme sur le Kanban) |
 | `GET /api/p/<projet>/session` | session, agent | `{ id, nom, role, proprietaire, ecriture }` |

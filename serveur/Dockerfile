@@ -20,6 +20,10 @@ COPY site/valider-notes.js site/valider-notes.js
 COPY site/changements.js site/changements.js
 COPY site/gabarit site/gabarit
 COPY site/retours site/retours
+# CLI « outil » et sa méthode (27/11/2026) : le serveur les distribue à GET /outil (distribution.ts), pour que les
+# postes de l'équipe l'installent d'une ligne. cli/test n'entre pas (Dockerfile.dockerignore).
+COPY cli cli
+COPY methode methode
 RUN mkdir -p /donnees /sauvegardes && chown node:node /donnees /sauvegardes
 # Sauvegardes (étape 3.7, A1) : un volume à part, pour qu'une restauration ou une perte du volume des données les épargne.
 ENV WDD_DONNEES=/donnees WDD_SAUVEGARDE=/sauvegardes WDD_HOTE=0.0.0.0 WDD_PORT=8080

@@ -41,6 +41,7 @@ import { routeDemandes, veilleurs, masquer, creerDemande } from "./demandes.ts";
 import { lancerSauvegarde } from "./sauvegarde.ts";
 import { routeNotifications } from "./notifications.ts";
 import { enregistrerCapture, lireCapture, MAX_CAPTURE } from "./captures.ts";
+import { servirOutil } from "./distribution.ts";
 import type { Notifieur } from "./notifications.ts";
 import type { EtatSauvegarde } from "./sauvegarde.ts";
 
@@ -224,6 +225,8 @@ export function routeur(ctx: Contexte) {
 				const v = versionDe(seg);
 				if (v !== undefined) return ctx.config.urlPages ? versHotePages(ctx, req, res, seg[1], params, v) : await pageProjet(ctx, req, res, seg[1], params, false, v);
 			}
+			// 27/11/2026 : la CLI « outil » et ses scripts d'installation (distribution.ts), hôte principal, sans authentification.
+			if (servirOutil(ctx.config.url, VERSION_OUTIL, req, res, seg)) return;
 			if (chemin === "/favicon.ico" && !uiPresente(ctx.config, "favicon.ico")) { res.writeHead(204); return void res.end(); }
 			if (m === "GET" || m === "HEAD") {
 				// Méta-interface (serveur/ui/) sous « / » ; sans elle, la page d'accueil de l'étape 1.

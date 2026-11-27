@@ -96,7 +96,7 @@ export const STYLE_BANDEAU = [
 // Phrase de branchement (étape 3.5, § 8.4, D1), mot pour mot celle de serveur/ui/js/branchement.js : posée sur la page
 // « Wiki pas encore publié » (http.ts). Texte brut, à échapper par l'appelant.
 export const phraseBranchement = (url: string, projet: string) =>
-	`Branche ce dépôt sur le serveur de retours ${url} (projet ${projet}) avec la CLI outil : lance outil methode et suis le § 0.`;
+	`Branche ce dépôt sur le serveur de retours ${url} (projet ${projet}) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : ${url}/outil).`;
 
 // Icône de la marque (le dessin de serveur/ui/icone.svg, sur un carré indigo clair lisible sur l'encre, comme la marque de
 // la méta-interface), en ligne : l'hôte des pages ne sert pas /icone.svg.

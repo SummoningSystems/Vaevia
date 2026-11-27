@@ -886,7 +886,7 @@ const ENTETE_AIDE = [
 	"Tickets : prendre avant de travailler, rendre si tu t'arrêtes ; jamais forcer ni prendre un ticket tenu par un autre ; pas de commande fermer (la fermeture est humaine).",
 	`Configuration : ${FICHIER_CONFIG} (serveur, projet, publier ; dans le dépôt du code, sans jeton). Jeton : OUTIL_JETON, sinon le fichier utilisateur écrit par « outil brancher » ou « outil connexion ».`,
 	"Brancher un poste : « outil brancher » affiche un code et attend un clic « Autoriser » dans le navigateur ; sans terminal, elle sort tout de suite : montrer le code à l'humain, puis « outil brancher --attendre ». Ne jamais chercher, lire ni afficher un jeton.",
-	"Brancher un dépôt : l'humain dit à son agent « Branche ce dépôt sur le serveur de retours <URL> (projet <P>) avec la CLI outil : lance outil methode et suis le § 0. » ; " +
+	"Brancher un dépôt : l'humain dit à son agent « Branche ce dépôt sur le serveur de retours <URL> (projet <P>) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : <URL>/outil). » ; " +
 		"le § 0 de la méthode fait lancer « outil installer » (connexion, AGENTS.md, raccourci Claude, .outil.json, première publication) ; sans terminal, elle s'arrête sur le code : le montrer à l'humain, puis relancer la commande affichée (… --oui).",
 	"Publier : « outil publier » (notes, exporteur, envoi) ; voir le Wiki publié : « outil apercu » (captures bureau, sombre, 390 px, à regarder). La méthode : « outil methode ».",
 	"Traiter depuis l'interface : « outil veille -- <commande de l'agent> » (lancé une fois par l'humain sur le poste du code ; outil aide veille pour l'exemple Claude Code).",

@@ -7,7 +7,7 @@
 import { h, copier } from "./dom.js";
 
 export function phraseBranchement(url, projet) {
-	return `Branche ce dépôt sur le serveur de retours ${url} (projet ${projet}) avec la CLI outil : lance outil methode et suis le § 0.`;
+	return `Branche ce dépôt sur le serveur de retours ${url} (projet ${projet}) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : ${url}/outil).`;
 }
 
 const CLE = "wdd-branchement-replie";

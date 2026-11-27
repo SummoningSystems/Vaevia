@@ -141,7 +141,7 @@ L'agent voit enfin le Wiki qu'il publie (`METHODE.md` § 4, étape 6).
 
 ## Brancher un dépôt : `outil installer` (étape 3.5)
 
-**Phrase de départ**, que l'humain dit à son agent (donnée à la fin de l'installeur Windows et sur l'écran du projet dans la méta-interface) : « Branche ce dépôt sur le serveur de retours <URL> (projet <P>) avec la CLI outil : lance outil methode et suis le § 0. » Elle nomme la CLI et une commande de départ : un agent neuf, sans raccourci, comprend sinon « remote Git » ou « serveur du jeu ». Le § 0 de `METHODE.md` lui fait lancer `outil installer`.
+**Phrase de départ**, que l'humain dit à son agent (donnée à la fin de l'installeur Windows et sur l'écran du projet dans la méta-interface) : « Branche ce dépôt sur le serveur de retours <URL> (projet <P>) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : <URL>/outil). » Elle nomme la CLI et une commande de départ : un agent neuf, sans raccourci, comprend sinon « remote Git » ou « serveur du jeu ». Le § 0 de `METHODE.md` lui fait lancer `outil installer`.
 
 Depuis le dépôt du **code**. **Idempotente** : relancée, elle dit ce qui est déjà fait et ne refait rien. **Aucune opération Git d'écriture** : Git ne sert qu'à lire (`rev-parse --show-toplevel`, `--no-optional-locks status`), et le résumé liste les fichiers à commiter.
 

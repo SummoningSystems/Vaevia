@@ -234,7 +234,7 @@ describe("CLI outil : publier et methode", () => {
 		for (const r of [/outil installer --oui/, /[Mm]ontre d'abord ce code/, /relance la commande affichée/, /jamais de jeton/, /vérifier sans écrire/, /publier\.exporteur/, /importer-artifact <dossier> --autoriser/, /seulement si l'humain l'a demandé/])
 			assert.match(zero, r, String(r));
 		// La phrase de départ (8.4, point 1), mot pour mot : § 0, README racine, cli/README.md (l'aide : test de l'aide).
-		const phrase = "Branche ce dépôt sur le serveur de retours <URL> (projet <P>) avec la CLI outil : lance outil methode et suis le § 0.";
+		const phrase = "Branche ce dépôt sur le serveur de retours <URL> (projet <P>) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : <URL>/outil).";
 		assert.ok(zero.includes(phrase), "§ 0");
 		for (const f of ["README.md", path.join("cli", "README.md")]) assert.ok(fs.readFileSync(path.join(RACINE, f), "utf8").includes(phrase), f);
 		// Brancher ne passe plus par un jeton collé : outil connexion seulement pour un poste sans navigateur.

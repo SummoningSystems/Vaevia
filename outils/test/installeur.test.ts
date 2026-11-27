@@ -258,7 +258,7 @@ describe("installeur Windows : outils/installer.ps1 en -Essai", { skip: WINDOWS 
 			// Raccourci Claude Code : jamais en -Essai sans -Profil (même avec un %USERPROFILE%\.claude).
 			"– Raccourci Claude Code : sans objet (-Essai sans -Profil)",
 			// D1 : la phrase à dire à son agent, avec l'adresse du serveur, nomme la CLI et la commande de départ.
-			`« Branche ce dépôt sur le serveur de retours http://127.0.0.1:${port} (projet <P>) avec la CLI outil : lance outil methode et suis le § 0. »`,
+			`« Branche ce dépôt sur le serveur de retours http://127.0.0.1:${port} (projet <P>) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : http://127.0.0.1:${port}/outil). »`,
 			"bloc « Brancher un dépôt de code »"]) assert.ok(r.sortie.includes(l), `« ${l} » attendu :\n${r.sortie}`);
 		assert.doesNotMatch(r.sortie, /^✗/m);
 		assert.ok(!r.sortie.includes(MASQUE_PROJET), "pas de ligne sur la copie personnelle sans copie posée");

@@ -79,7 +79,7 @@ describe("CLI outil", () => {
 			"tickets liste", "tickets voir", "tickets creer", "tickets prendre", "tickets rendre", "tickets revue", "tickets commit", "tickets critere"])
 			assert.ok(r.stdout.includes("outil " + c), c);
 		// La phrase de départ d'un branchement (étape 3.5, 8.4), mot pour mot.
-		assert.ok(r.stdout.includes("« Branche ce dépôt sur le serveur de retours <URL> (projet <P>) avec la CLI outil : lance outil methode et suis le § 0. »"), "phrase de départ dans l'aide");
+		assert.ok(r.stdout.includes("« Branche ce dépôt sur le serveur de retours <URL> (projet <P>) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : <URL>/outil). »"), "phrase de départ dans l'aide");
 		const j = await outil(["aide", "--json"]);
 		assert.equal(j.json.commandes.length, NB_COMMANDES);
 		for (const c of j.json.commandes) assert.match(c.exemple, /^outil /, c.commande);

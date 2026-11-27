@@ -10,3 +10,6 @@
 !site/retours
 !serveur/ui
 serveur/ui/tests
+!cli
+cli/test
+!methode

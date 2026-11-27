@@ -36,20 +36,24 @@ git clone <adresse de ce dépôt> vaevia && cd vaevia
 ./installer-ubuntu.sh
 ```
 
-Le script installe Docker, Compose et Git (apt) s'ils manquent, écrit `.env`, construit et lance le serveur derrière Caddy, puis affiche le lien du compte admin et ce qu'il faut faire sur chaque poste de l'équipe (noms, certificat, phrase de branchement). Relancé, il ne refait que ce qui manque ; les données restent dans les volumes Docker.
+Le script installe Docker, Compose et Git (apt) s'ils manquent, écrit `.env`, construit et lance le serveur, puis affiche le lien du compte admin et l'adresse de l'équipe. Relancé, il ne refait que ce qui manque ; les données restent dans les volumes Docker.
 
-- `--mode interne` (défaut) : HTTPS avec l'autorité interne de Caddy, pour un réseau local ; le certificat racine est écrit dans `racine-caddy.crt`, à installer sur chaque poste. `--mode internet` : Let's Encrypt (deux vrais noms de domaine). `--mode http` : essai en clair sur un réseau de confiance.
-- `--domaine vaevia.lan --domaine-pages vaevia-pages.lan` (défauts) : deux noms qui mènent à ce serveur (DNS interne, ou fichier `hosts` de chaque poste).
+- **L'équipe** ouvre `http://<IP du serveur>:8080` : rien à installer sur les postes.
+- **Les développeurs** disent à leur agent la phrase de l'écran du projet (plus bas). Si la CLI manque sur le poste, l'agent l'installe lui-même depuis `<adresse>/outil`, d'une ligne : il faut seulement Node 24 ou plus et Git sur le poste.
+
+- `--mode http` (défaut) : HTTP sur l'IP du serveur. Tout passe en clair sur le réseau, et le Wiki partage l'adresse de l'administration (seule la CSP des pages protège l'administration) : réseau de confiance seulement.
+- `--mode interne` : HTTPS avec l'autorité interne de Caddy ; deux noms (DNS interne ou fichier `hosts`), et le certificat racine écrit dans `racine-caddy.crt`, à installer sur chaque poste. `--mode internet` : Let's Encrypt (deux vrais noms de domaine).
+- HTTPS : `--domaine vaevia.lan --domaine-pages vaevia-pages.lan` (défauts), deux noms qui mènent à ce serveur.
 - `--oui` (aucune question), `--port <n>`, `--sans-paquets` ; `--etat`, `--mettre-a-jour` (`git pull`, reconstruit, relance), `--arreter`, `--reconnecter` (lien admin perdu) ; `--aide`.
 - Détail : [docs/acces-distant.md](docs/acces-distant.md).
 
 ## Brancher un dépôt
 
-Il faut la CLI `outil` dans le `PATH` (l'installeur Windows le propose ; sinon, le dossier `cli/` de ce dépôt). Dans le dépôt du code, dis à ton agent, quel qu'il soit :
+Dans le dépôt du code, dis à ton agent, quel qu'il soit :
 
-> Branche ce dépôt sur le serveur de retours <URL> (projet <P>) avec la CLI outil : lance outil methode et suis le § 0.
+> Branche ce dépôt sur le serveur de retours <URL> (projet <P>) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : <URL>/outil).
 
-La fin de l'installeur et l'écran du projet dans la méta-interface (le Kanban, et le Wiki tant qu'il n'est pas publié) donnent cette phrase avec la bonne adresse et le bon projet. L'agent lance `outil installer` : un clic « Autoriser » dans ton navigateur, puis la page est publiée et il te dit les fichiers à commiter. Détail : [cli/README.md](cli/README.md) (« Brancher un dépôt »), [methode/METHODE.md](methode/METHODE.md) § 0.
+La fin de l'installeur et l'écran du projet dans la méta-interface (le Kanban, et le Wiki tant qu'il n'est pas publié) donnent cette phrase avec la bonne adresse et le bon projet. Sans la CLI `outil` sur le poste, l'agent lit `<URL>/outil` : une ligne, la même dans cmd, PowerShell, Git Bash, Linux et macOS, l'installe dans le dossier de l'utilisateur (Windows : `%LOCALAPPDATA%\Programs\vaevia-outil`, ajouté au `PATH` de l'utilisateur ; ailleurs : `~/.local/share/vaevia-outil` et `~/.local/bin/outil`). Il faut Node 24 ou plus et Git. L'installeur Windows (`installer.cmd`) n'est que pour le poste qui sert de serveur. L'agent lance `outil installer` : un clic « Autoriser » dans ton navigateur, puis la page est publiée et il te dit les fichiers à commiter. Détail : [cli/README.md](cli/README.md) (« Brancher un dépôt »), [methode/METHODE.md](methode/METHODE.md) § 0.
 
 ## Construire une page
 

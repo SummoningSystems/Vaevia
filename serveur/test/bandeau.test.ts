@@ -120,7 +120,7 @@ describe("bandeau du Wiki : un seul hôte", () => {
 	});
 
 	test("Wiki pas encore publié : bloc « Brancher un dépôt de code » et phrase mot pour mot pour un mainteneur ou un admin ; ni pour un contributeur, ni pour un jeton", async () => {
-		const phrase = `Branche ce dépôt sur le serveur de retours ${u} (projet verger) avec la CLI outil : lance outil methode et suis le § 0.`;
+		const phrase = `Branche ce dépôt sur le serveur de retours ${u} (projet verger) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : ${u}/outil).`;
 		const maudV = await session(u, "verger", "maud", "mainteneur", "Maud");
 		for (const c of [maudV, adm]) {
 			const p = await appel(u, "/p/verger/", { cookie: c });
@@ -135,7 +135,7 @@ describe("bandeau du Wiki : un seul hôte", () => {
 		const a = await appel(u, "/p/verger/", { bearer: jv });
 		assert.equal(a.status, 404); assert.ok(!a.texte.includes("Brancher un dépôt"), "jeton : pas de bloc");
 		// Même phrase que la méta-interface (branchement.js) et que la méthode (gabarit <URL>, <P>).
-		assert.equal(phraseBranchement("<URL>", "<P>"), "Branche ce dépôt sur le serveur de retours <URL> (projet <P>) avec la CLI outil : lance outil methode et suis le § 0.");
+		assert.equal(phraseBranchement("<URL>", "<P>"), "Branche ce dépôt sur le serveur de retours <URL> (projet <P>) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : <URL>/outil).");
 		assert.ok(fs.readFileSync(path.join(RACINE_OUTIL, "serveur", "ui", "js", "branchement.js"), "utf8").includes("`" + phraseBranchement("${url}", "${projet}") + "`"), "branchement.js");
 	});
 
@@ -230,7 +230,7 @@ describe("bandeau du Wiki : deux hôtes (WDD_URL_PAGES)", () => {
 		const maudV = await session(u, "verger", "maud", "mainteneur", "Maud");
 		const m = await appelHote(port, P, "/p/verger/", { cookie: await entrer(maudV, "verger") });
 		assert.equal(m.status, 404);
-		assert.ok(m.texte.includes(`<p id="phrase-branchement"><code>Branche ce dépôt sur le serveur de retours ${u} (projet verger) avec la CLI outil : lance outil methode et suis le § 0.</code></p>`), m.texte);
+		assert.ok(m.texte.includes(`<p id="phrase-branchement"><code>Branche ce dépôt sur le serveur de retours ${u} (projet verger) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : ${u}/outil).</code></p>`), m.texte);
 		assert.equal((await appelHote(port, H, "/p/jardin/", { cookie: camille })).status, 303);
 	});
 

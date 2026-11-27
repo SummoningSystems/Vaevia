@@ -7,7 +7,7 @@ description: Traiter les retours d'un site de retours relié à un serveur auto-
 
 Ce skill n'est qu'un raccourci : toute la méthode est dans `METHODE.md` de l'outil.
 
-1. Lire la méthode en entier : `outil methode`. Si `outil` est introuvable, le dire à l'utilisateur ; ne pas chercher la CLI ni la méthode ailleurs sur la machine.
+1. Lire la méthode en entier : `outil methode`. Si `outil` est introuvable et que l'utilisateur a donné l'adresse du serveur (phrase de branchement) : lire `<URL>/outil` et lancer la ligne qu'il donne, qui installe la CLI dans le dossier de l'utilisateur (méthode, § 0) ; sans adresse, le dire à l'utilisateur. Ne pas chercher la CLI ni la méthode ailleurs sur la machine.
 2. La suivre, avec la seule CLI `outil` (`outil aide` pour les commandes), lancée depuis le dépôt du code, qui contient `.outil.json`.
 3. Dans ce dépôt, le Wiki se publie par `outil publier`, jamais par un Artifact claude.ai.
 4. « Refais le cadrage du wiki », « ajoute les icônes » : section « Créer ou refaire le Wiki » de la méthode ; `outil apercu` en donne les captures, à regarder avec Read.

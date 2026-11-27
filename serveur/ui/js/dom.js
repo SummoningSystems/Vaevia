@@ -68,6 +68,16 @@ export function court(s, n) {
 	return c.length > n ? c.slice(0, n - 1).join("") + "…" : t;
 }
 
+// Presse-papiers ; sur un réseau local en http (contexte non sécurisé, pas de navigator.clipboard), copie par une zone de
+// texte sélectionnée, permise pendant le clic de l'utilisateur. false : l'appelant sélectionne le texte (Ctrl+C).
 export async function copier(texte) {
-	try { await navigator.clipboard.writeText(texte); return true; } catch { return false; }
+	try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(texte); return true; } } catch { }
+	try {
+		const ta = document.createElement("textarea"); ta.value = texte; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+		const avant = document.activeElement;
+		document.body.appendChild(ta); ta.select(); const ok = document.execCommand("copy"); ta.remove();
+		// Le champ que l'appelant avait sélectionné le reste (focus et sélection rendus).
+		if (avant && typeof avant.select === "function") avant.select(); else if (avant && typeof avant.focus === "function") avant.focus();
+		return ok;
+	} catch { return false; }
 }

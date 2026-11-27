@@ -8,12 +8,15 @@
 #   ./installer-ubuntu.sh --etat | --arreter | --reconnecter | --aide
 #
 # Modes (--mode) :
-#   interne   (défaut) HTTPS avec l'autorité interne de Caddy : réseau local, aucun appel sortant pour les certificats.
+#   http      (défaut) l'équipe ouvre http://<IP de ce serveur>:8080, rien à installer sur les postes. Tout passe en
+#             clair sur le réseau, et le Wiki partage l'adresse de l'administration : réseau de confiance seulement.
+#   interne   HTTPS avec l'autorité interne de Caddy : deux noms (DNS interne ou fichier hosts), un certificat racine
+#             à installer sur chaque poste.
 #   internet  HTTPS avec Let's Encrypt : deux vrais noms de domaine, ports 80 et 443 joignables depuis Internet.
-#   http      essai en HTTP clair sur un réseau de confiance (liens et cookies en clair) : pas pour un usage durable.
+# Les développeurs n'installent rien à la main : leur agent prend la CLI sur le serveur (<adresse>/outil).
 # Relancé, il ne refait que ce qui manque : les données restent dans les volumes Docker.
-# Il faut Internet pendant l'installation (paquets apt, images Docker node et caddy) ; ensuite, plus rien ne sort en
-# mode interne. Réseau sans Internet : docs/hors-ligne.md.
+# Il faut Internet pendant l'installation (paquets apt, images Docker node et caddy) ; ensuite, plus rien ne sort.
+# Réseau sans Internet : docs/hors-ligne.md.
 set -euo pipefail
 
 RACINE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,13 +24,13 @@ cd "$RACINE"
 PROJET=vaevia
 
 MODE=""; DOMAINE=""; DOMAINE_PAGES=""; PORT=""; OUI=0; ACTION=installer; SANS_PAQUETS=0
-aide() { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; cat <<'EOF'
+aide() { sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; cat <<'EOF'
 
 Options :
-  --mode interne|internet|http     (défaut : interne, ou celui de l'installation déjà faite)
-  --domaine <nom>                  nom de l'administration (défaut : vaevia.lan)
-  --domaine-pages <nom>            nom des Wikis, autre que --domaine (défaut : vaevia-pages.lan)
-  --port <n>                       port du serveur sur cette machine (défaut : 8080 ; réseau en mode http seulement)
+  --mode http|interne|internet     (défaut : http, ou celui de l'installation déjà faite)
+  --domaine <nom>                  HTTPS : nom de l'administration (défaut : vaevia.lan)
+  --domaine-pages <nom>            HTTPS : nom des Wikis, autre que --domaine (défaut : vaevia-pages.lan)
+  --port <n>                       port du serveur (défaut : 8080 ; ouvert au réseau en mode http, local derrière Caddy)
   --oui                            aucune question
   --sans-paquets                   ne pas installer Docker ni Git avec apt (déjà installés autrement)
 Codes de sortie : 0 succès, 1 échec, 2 usage.
@@ -119,7 +122,7 @@ reglages() {
 	local ancien_port; ancien_port="$(lire_env WDD_PORT_PUBLIE)"; ancien_port="${ancien_port##*:}"
 	[[ "$ancien_port" =~ ^[0-9]+$ ]] || ancien_port=""
 	PORT="${PORT:-${ancien_port:-8080}}"
-	MODE="${MODE:-${ancien_mode:-interne}}"
+	MODE="${MODE:-${ancien_mode:-http}}"
 	case "$MODE" in interne|internet|http) ;; *) usage "--mode : interne, internet ou http (reçu « $MODE »)" ;; esac
 	poser_env COMPOSE_PROJECT_NAME "$PROJET"
 	poser_env VAEVIA_MODE "$MODE"
@@ -196,38 +199,42 @@ lien_admin() {
 }
 
 resume() {
-	local mode d dp ip
+	local mode d dp ip url
 	mode="$(lire_env VAEVIA_MODE)"; d="$(lire_env WDD_DOMAINE)"; dp="$(lire_env WDD_DOMAINE_PAGES)"
 	ip="$(hostname -I 2>/dev/null | awk '{print $1}')"; ip="${ip:-<IP de ce serveur>}"
+	if [ "$mode" = http ]; then url="$(lire_env WDD_URL)"; else url="https://$d"; fi
 	etape "Installé"
 	lien_admin
+	echo
+	echo "   L'équipe ouvre : $url"
 	if [ "$mode" = http ]; then
-		echo; info "Adresse pour l'équipe : $(lire_env WDD_URL)"
-		info "Toute l'équipe passe par cette adresse exacte (ni le nom de la machine, ni une autre IP) : le serveur refuse"
-		info "les écritures venues d'une autre origine. Pour en changer : WDD_URL dans .env, puis ./installer-ubuntu.sh"
-		return
-	fi
-	cat <<EOF
-
-   Sur chaque poste de l'équipe :
-   1. Les deux noms doivent mener à ce serveur ($ip) : DNS interne, ou à défaut une ligne dans le fichier hosts
-      (Windows : C:\\Windows\\System32\\drivers\\etc\\hosts, en administrateur ; Linux, macOS : /etc/hosts) :
+		cat <<EOF
+     Rien à installer sur les postes. Toujours cette adresse exacte (ni le nom de la machine, ni une autre IP) : le
+     serveur refuse les écritures venues d'une autre origine. Tout passe en clair : réseau de confiance seulement.
+     Cette adresse est inscrite dans .env : il faut à ce serveur une IP fixe (ou une réservation DHCP).
+EOF
+	else
+		cat <<EOF
+     Sur chaque poste, les deux noms doivent mener à ce serveur ($ip) : DNS interne, ou à défaut une ligne dans le
+     fichier hosts (Windows : C:\\Windows\\System32\\drivers\\etc\\hosts, en administrateur ; Linux, macOS : /etc/hosts) :
         $ip  $d $dp
 EOF
-	if [ "$mode" = interne ]; then
-		cat <<EOF
-   2. Faire confiance à l'autorité interne : copier $RACINE/racine-caddy.crt sur le poste (il n'est pas secret), puis
+		if [ "$mode" = interne ]; then
+			cat <<EOF
+     Et faire confiance à l'autorité interne : copier $RACINE/racine-caddy.crt sur le poste (il n'est pas secret), puis
       - navigateurs (Windows) : certutil -user -addstore Root racine-caddy.crt   (Firefox : ses propres réglages)
       - CLI outil et agents   : setx NODE_EXTRA_CA_CERTS C:\\Outils\\racine-caddy.crt   puis rouvrir le terminal
                                 (Linux, macOS : export NODE_EXTRA_CA_CERTS=~/racine-caddy.crt dans le profil du shell)
 EOF
+		fi
 	fi
 	cat <<EOF
-   3. Ouvrir https://$d/ ; pour un dépôt de code, dire à l'agent :
-        Branche ce dépôt sur le serveur de retours https://$d (projet <P>) avec la CLI outil : lance outil methode et suis le § 0.
-      (la CLI : Node 24, Git, et le dossier cli/ de ce dépôt dans le PATH du poste ; pas installer.cmd, qui monterait un 2e serveur)
 
-   Ensuite : Administration → Sauvegarde, à activer. Ports 80 et 443 : Docker les ouvre lui-même, avant ufw.
+   Développeurs : créer le projet dans l'interface ; son écran donne la phrase à dire à l'agent, par exemple :
+     Branche ce dépôt sur le serveur de retours $url (projet <P>) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : $url/outil).
+   L'agent installe la CLI lui-même depuis $url/outil : il faut seulement Node 24 ou plus et Git sur le poste.
+
+   Ensuite : Administration → Sauvegarde, à activer. Docker ouvre lui-même les ports du serveur, avant ufw.
    Commandes : ./installer-ubuntu.sh --etat | --mettre-a-jour | --arreter | --reconnecter
 EOF
 }

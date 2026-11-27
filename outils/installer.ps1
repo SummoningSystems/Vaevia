@@ -800,7 +800,7 @@ function Action-Installer {
 	# de départ. L'id du projet vient de l'Administration ; l'écran du projet donne la phrase complète.
 	Write-Host ''
 	Write-Host 'Brancher un dépôt de code : crée le projet (Administration), puis dis à ton agent, ouvert dans ce dépôt :'
-	Ecrire-Info "« Branche ce dépôt sur le serveur de retours $url (projet <P>) avec la CLI outil : lance outil methode et suis le § 0. »"
+	Ecrire-Info "« Branche ce dépôt sur le serveur de retours $url (projet <P>) avec la CLI outil : lance outil methode et suis le § 0 (si outil manque : $url/outil). »"
 	Ecrire-Info "<P> : l'id du projet ; la phrase complète est sur l'écran du projet, bloc « Brancher un dépôt de code »."
 	Ecrire-Info "Il faut la CLI outil dans le PATH du poste ($CLI ; dans un nouveau terminal après l'installation)."
 	if ($script:SkillPresent) {

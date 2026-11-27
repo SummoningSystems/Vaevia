@@ -13,7 +13,7 @@ Par défaut, le serveur n'écoute que sur la machine qui le fait tourner. `-Rese
 - **Sur Internet :** rien d'autre. Caddy obtient et renouvelle seul les certificats (Let's Encrypt).
 - **Sur un réseau isolé :** une autorité interne (voir plus bas), et des noms résolus par le DNS interne ou par le fichier `hosts` de chaque poste.
 
-Sur Ubuntu, `./installer-ubuntu.sh` fait toutes les étapes ci-dessous (et installe Docker) : voir le README, « Installer le serveur d'équipe sur Ubuntu ». Les étapes restent utiles pour une autre machine ou pour comprendre ce qu'il règle.
+Sur Ubuntu, `./installer-ubuntu.sh --mode interne` (réseau local) ou `--mode internet` fait toutes les étapes ci-dessous (et installe Docker) : voir le README, « Installer le serveur d'équipe sur Ubuntu ». Les étapes restent utiles pour une autre machine ou pour comprendre ce qu'il règle.
 
 ## Étapes
 
@@ -77,4 +77,5 @@ Ce fichier n'est pas secret : c'est la clé privée qui l'est, et elle reste dan
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
 - **Vérifié le 27/11/2026, sur le Docker d'un poste Windows (moteur Linux)** : les deux `Caddyfile` sont valides pour Caddy 2.8.4 (`caddy validate`). Avec `Caddyfile.interne`, la pile complète démarre, et un client Node qui a `NODE_EXTRA_CA_CERTS` sur la racine exportée vérifie le certificat : l'administration répond 200, l'hôte des pages 401 sans session, et le HTTP renvoie vers le HTTPS (308). Les suites du serveur et de la CLI passent aussi sous Linux (image `node:24`). `installer-ubuntu.sh` a été rejoué de bout en bout dans une Ubuntu 24.04 neuve branchée sur ce Docker : paquets, réglages, image, Caddy interne, certificat exporté (vérifié par Node), relance sans effet, passage en mode http et retour, arrêt, relance.
-- **Pas encore essayé** : un certificat Let's Encrypt réel, un vrai serveur Ubuntu, un poste Windows avec la racine installée dans son magasin.
+- **Vérifié le 27/11/2026, mode `http` (défaut d'`installer-ubuntu.sh`) et CLI servie par le serveur** : installation neuve dans une Ubuntu 24.04 (utilisateur avec sudo), adresse `http://<IP>:<port>` ; depuis un poste Linux (image `node:24`) et depuis Windows (cmd, PowerShell 5.1 et 7), la ligne de `<URL>/outil` installe la CLI, qui trouve sa méthode. Le scénario Edge du Wiki passe en entier sur un nom autre que localhost, en contexte non sécurisé comme sur une IP du réseau (149 vérifications ; la copie de lien demande un vrai clic). Microsoft Defender laisse passer la ligne Node ; il bloquait « powershell … irm … | iex » (Trojan:Win32/Commando.B!ml), d'où le choix de Node.
+- **Pas encore essayé** : un certificat Let's Encrypt réel, un vrai serveur Ubuntu (ni 22.04), un poste Windows avec la racine installée dans son magasin, le vrai PATH de l'utilisateur Windows (les tests passent par une clé de registre d'essai), un autre antivirus que Defender, et un vrai agent qui branche un dépôt sur un poste sans la CLI.
