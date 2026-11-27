@@ -4,7 +4,7 @@ Par défaut, le serveur n'écoute que sur la machine qui le fait tourner. `-Rese
 
 ## Ce qu'il faut
 
-- **Une machine qui fait tourner Docker**, avec les ports 80 et 443 ouverts vers elle.
+- **Une machine qui fait tourner Docker**, avec les ports 80 et 443 ouverts vers elle. Sous Ubuntu : `sudo apt install docker.io docker-compose-v2 git`, puis `git clone` de ce dépôt et les étapes ci-dessous depuis sa racine.
 - **Deux noms qui pointent vers cette machine** :
   - un pour l'administration (`WDD_DOMAINE`, par ex. `retours.exemple.fr`) ;
   - un pour les Wikis (`WDD_DOMAINE_PAGES`, par ex. `retours-pages.exemple`).
@@ -48,6 +48,11 @@ Par défaut, le serveur n'écoute que sur la machine qui le fait tourner. `-Rese
 docker compose -f docker-compose.yml -f docker-compose.https.yml exec caddy cat /data/caddy/pki/authorities/local/root.crt > racine-caddy.crt
 ```
 
+Sur chaque poste de l'équipe :
+
+- **Navigateurs** : ils lisent le magasin du système. Windows : `certutil -user -addstore Root racine-caddy.crt` (ou double-clic sur le fichier, « Installer le certificat », magasin « Autorités de certification racines de confiance »). Firefox a son propre magasin (Paramètres, Certificats).
+- **CLI `outil` et agents** : Node ne lit pas ce magasin. Poser `NODE_EXTRA_CA_CERTS` sur le chemin du fichier, puis rouvrir le terminal et l'agent. Windows : `setx NODE_EXTRA_CA_CERTS C:\Outils\racine-caddy.crt` ; Linux, macOS : `export NODE_EXTRA_CA_CERTS=~/racine-caddy.crt` dans le profil du shell. Sans cela, `outil brancher` échoue sur une erreur de certificat.
+
 Ce fichier n'est pas secret : c'est la clé privée qui l'est, et elle reste dans le volume `wdd-caddy`. Pour un réseau qui a déjà sa propre autorité, remplacer `tls internal` par les chemins de son certificat et de sa clé (directive `tls <cert> <clé>` de Caddy). Les notifications vers une messagerie interne demandent en plus `WDD_NOTIF_LOCALES=1`.
 
 ## Ce qu'il faut savoir avant d'ouvrir
@@ -67,7 +72,7 @@ Ce fichier n'est pas secret : c'est la clé privée qui l'est, et elle reste dan
   - remplacer `wdd:8080` par `127.0.0.1:8080` ;
   - lancer le serveur avec `WDD_URL`, `WDD_URL_PAGES` et `WDD_HTTPS=1`.
 
-## Ce qui n'est pas vérifié
+## Ce qui est vérifié, et ce qui ne l'est pas
 
-- **Validation des fichiers.** Les deux `Caddyfile` n'ont pas été validés par Caddy lui-même : le Docker du poste de développement n'était pas démarré. `docker compose config` valide la composition.
-- **Essais réels.** Aucune mise en ligne réelle : ni certificat Let's Encrypt, ni autorité interne installée sur un poste.
+- **Vérifié le 27/11/2026, sur le Docker d'un poste Windows (moteur Linux)** : les deux `Caddyfile` sont valides pour Caddy 2.8.4 (`caddy validate`). Avec `Caddyfile.interne`, la pile complète démarre, et un client Node qui a `NODE_EXTRA_CA_CERTS` sur la racine exportée vérifie le certificat : l'administration répond 200, l'hôte des pages 401 sans session, et le HTTP renvoie vers le HTTPS (308). Les suites du serveur et de la CLI passent aussi sous Linux (image `node:24`).
+- **Pas encore essayé** : un certificat Let's Encrypt réel, un vrai serveur Ubuntu, un poste Windows avec la racine installée dans son magasin.
