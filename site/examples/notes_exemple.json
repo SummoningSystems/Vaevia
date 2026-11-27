@@ -1,0 +1,33 @@
+{
+	"title": "Retours du 10/11",
+	"date": "2026-11-12",
+	"intro": "Ce qui a changé après les retours laissés le 10/11 (jalons V1 et V2). Avant → après ; les valeurs « après » sont celles des onglets de cette page.",
+	"milestones": {
+		"V1": "Rappels d'arrosage · 11/11",
+		"V2": "Calendrier et nouvelles plantes · 12/11"
+	},
+	"commits": { "V1": "a1b2c3d", "V2": "e4f5a6b" },
+	"changes": [
+		{ "id": "V1-chaleur", "milestone": "V1", "subject": "Arrosage par forte chaleur", "before": "intervalle fixe", "after": "−1 jour au-dessus de 28 °C (au moins 1)" },
+		{ "id": "V1-pluie", "milestone": "V1", "subject": "Arrosage après la pluie", "before": "—", "after": "+1 jour si plus de 5 mm" },
+		{ "id": "V2-calendrier", "milestone": "V2", "subject": "Écran Calendrier", "before": "liste par semaine", "after": "vue mois, un appui ouvre les tâches du jour" }
+	],
+	"measures_note": "Simulation de 30 jours de météo réelle (3 régions), sur une copie de la configuration avant et après chaque jalon.",
+	"measures": [
+		{ "id": "mesure-rappels-manques", "label": "Rappels d'arrosage manqués par semaine", "target": "cible : moins de 1", "steps": [
+			{ "when": "Avant V1", "value": "2,4" },
+			{ "when": "Après V1", "value": "0,6" }
+		] },
+		{ "id": "mesure-ouverture", "label": "Ouverture de l'accueil (ms, médiane sur 50 lancements)", "list": true, "target": "cible : 400 ms", "steps": [
+			{ "when": "Téléphone récent", "value": "180" },
+			{ "when": "Téléphone de 2019", "value": "420" }
+		] }
+	],
+	"validations_note": "Points laissés à ta décision par les jalons V1 et V2 ; un point « dépend de » ne se tranche qu'après celui qu'il cite.",
+	"validations": [
+		{ "id": "V1-seuil-chaleur", "milestone": "V1", "text": "Seuil de forte chaleur à 28 °C : faut-il le rendre réglable par région ?" },
+		{ "id": "V1-pluie-mm", "milestone": "V1", "text": "Pluie comptée à partir de 5 mm (prévision du matin, pas pluie mesurée)." },
+		{ "id": "V2-vue-mois", "milestone": "V2", "theme": "Calendrier", "text": "Vue mois par défaut ; la vue semaine reste accessible par un bouton." },
+		{ "id": "V2-poivron-tot", "milestone": "V2", "theme": "Plantes", "text": "Le calendrier propose de semer le poivron trois semaines avant la tomate.", "depends": "Dépend de V2-vue-mois." }
+	]
+}

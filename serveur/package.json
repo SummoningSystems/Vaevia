@@ -1,0 +1,11 @@
+{
+  "name": "wdd-serveur",
+  "private": true,
+  "description": "Serveur minimal de l'étape 1 (docs/etape1-serveur.md) : TypeScript exécuté directement par Node 24, aucune dépendance.",
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "demarrer": "node src/principal.ts",
+    "test": "node --test \"test/*.test.ts\""
+  }
+}

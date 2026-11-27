@@ -1,0 +1,23 @@
+; Projet temporaire d'essai du greffon retours_app (étape 3.9, I2). Réglages posés par essai.mjs (serveur, projet).
+config_version=5
+
+[application]
+
+config/name="Essai retours"
+config/version="0.1"
+run/main_scene="res://principal.tscn"
+
+[autoload]
+
+RetoursApp="*res://addons/retours_app/retours_app.gd"
+
+[display]
+
+window/size/viewport_width=640
+window/size/viewport_height=360
+
+[retours_app]
+
+serveur="SERVEUR"
+projet="jardin"
+actif="toujours"

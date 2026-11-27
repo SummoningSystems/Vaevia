@@ -1,0 +1,100 @@
+/* Module retours : styles du bouton « ✎ Retour » de chaque élément, de la barre et de la note sous les onglets,
+   du bouton flottant et du tiroir. Injectés par build.js dans le <style> du gabarit, à la place du repère RETOURS_CSS.
+   Dépendances côté page : les jetons de couleur (--bg, --panel, --raised, --line, --text, --muted, --accent, --mark,
+   --st-new, --st-taken, --st-question, --st-done, --st-refused), --body, et les classes .btn et .eyebrow. Jetons
+   facultatifs (avec repli) : --line-strong, --field (bord des champs, 3:1), --accent-bg, --display (police des titres). */
+.fb-top { display: flex; flex-wrap: wrap; gap: 6px; }
+@media (max-width: 460px) { .fb-top .btn { padding: 4px 9px; font-size: 12.5px; } }
+/* Série de retours (étape 3.7, R1) : bouton « Commencer une série », puis une barre tant qu'elle dure. */
+.fb-serie { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; flex-basis: 100%; }
+.fb-serie.active { border: 1px solid var(--accent); border-radius: 8px; padding: 6px 8px; background: var(--accent-bg, var(--panel)); }
+.fb-serie .fb-serie-etat { font-size: 13.5px; }
+.fb-serie .fb-msg { flex: 1 1 16rem; font-size: 12.5px; color: var(--muted); min-width: 0; }
+.st-brouillon { --st: var(--accent); border-style: dashed; }
+/* Captures jointes (étape 3.7, R2) : bouton, vignettes du formulaire, vignettes d'un retour. */
+.fb-captures { display: grid; gap: 4px; }
+.fb-cap-row { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.fb-cap-row .fb-msg, .fb-cap-note { font-size: 12.5px; color: var(--muted); margin: 0; }
+.fb-pieces { display: flex; flex-wrap: wrap; gap: 6px; }
+.fb-pieces:empty { display: none; }
+.fb-piece { position: relative; display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--raised); }
+.fb-piece img { display: block; max-width: 96px; max-height: 96px; }
+.fb-piece button { position: absolute; top: 2px; right: 2px; min-height: 0; padding: 0 6px; line-height: 20px; }
+.fb-caps { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.fb-caps a { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.fb-caps img { display: block; max-width: 160px; max-height: 120px; object-fit: contain; background: var(--raised); }
+.fb-drafts-title { font-size: 13px; margin: 8px 0 4px; }
+/* Retours indisponibles (fichier local, pas de base, connexion perdue) : un filet ambre, lisible sans être une alerte. */
+.note-off { font-size: 13px; color: var(--text); max-width: 72ch; border-left: 3px solid var(--st-new); padding: 4px 0 4px 10px; }
+/* Retours : un bouton par element, un tiroir lateral, une liste de suivi */
+.fb-slot:empty { display: none; }
+.fb-btn { font: 500 12.5px var(--body); color: var(--muted); background: transparent; border: 1px solid var(--line-strong, var(--line)); border-radius: 6px; padding: 2px 8px; min-height: 26px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.fb-btn:hover { color: var(--mark); border-color: var(--mark); background: var(--accent-bg, transparent); }
+.fb-btn .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--st, var(--muted)); }
+/* Bouton flottant : une pastille pleine aux couleurs de l'accent en bas à droite au bureau (compteur en pastille claire) ;
+   sur un écran étroit, une barre posée en bas de l'écran (pleine largeur, opaque, claire) qui ne flotte plus au-dessus
+   des fiches. La page garde de la place en dessous. */
+.fb-fab { position: fixed; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 40; font: 600 13.5px var(--body); padding: 7px 12px 7px 14px; min-height: 36px; border-radius: 999px; border: 1px solid var(--mark); background: var(--mark); color: var(--panel); cursor: pointer; box-shadow: 0 6px 20px color-mix(in srgb, var(--text) 22%, transparent); display: inline-flex; gap: 8px; align-items: center; }
+.fb-fab:hover { background: color-mix(in srgb, var(--mark) 88%, var(--text)); }
+.fb-fab .n { font: 700 12px/19px var(--display, var(--body)); font-variant-numeric: tabular-nums; background: var(--panel); color: var(--mark); border-radius: 999px; padding: 0 7px; }
+@media (max-width: 640px) {
+	/* Le focus clavier ne doit pas finir sous la barre (WCAG 2.4.11) : le défilement lui réserve sa hauteur. */
+	html { scroll-padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+	.fb-fab { left: 0; right: 0; bottom: 0; border-radius: 0; border-width: 1px 0 0; border-color: var(--line-strong, var(--line)); box-shadow: none; background: var(--panel); color: var(--mark); justify-content: center; min-height: 44px; padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px)); }
+	.fb-fab:hover { background: var(--accent-bg, var(--panel)); }
+	.fb-fab .n { background: var(--mark); color: var(--panel); }
+}
+.fb-panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 50; width: min(460px, 100%); background: var(--panel); border-left: 1px solid var(--line); box-shadow: -8px 0 24px color-mix(in srgb, var(--text) 12%, transparent); display: grid; grid-template-rows: auto minmax(0, 1fr); padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.fb-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: start; padding: 12px 16px 10px; border-bottom: 1px solid var(--line); }
+.fb-head h3 { font-size: 18px; grid-column: 1 / -1; overflow-wrap: anywhere; }
+.fb-body { overflow-y: auto; padding: 12px 16px 24px; display: grid; gap: 12px; align-content: start; }
+#fb-listwrap { display: grid; gap: 10px; }
+.fb-body > [data-all] { justify-self: start; }
+.fb-form { display: grid; gap: 8px; background: var(--raised); border-radius: 8px; padding: 12px; }
+.fb-form label { font: 600 13.5px var(--display, var(--body)); color: var(--text); }
+.fb-cats, .fb-filter { display: flex; flex-wrap: wrap; gap: 6px; }
+.fb-cats button, .fb-filter button { font: 500 12.5px var(--body); padding: 3px 10px; min-height: 28px; border-radius: 999px; border: 1px solid var(--line-strong, var(--line)); background: var(--panel); color: var(--text); cursor: pointer; }
+.fb-cats button:hover, .fb-filter button:hover { border-color: var(--mark); }
+.fb-cats button[aria-pressed="true"], .fb-filter button[aria-pressed="true"] { color: var(--panel); border-color: var(--mark); background: var(--mark); font-weight: 600; }
+.fb-form textarea, .fb-form input { font: 14px var(--body); color: var(--text); background: var(--panel); border: 1px solid var(--field, var(--line-strong, var(--line))); border-radius: 6px; padding: 7px 9px; width: 100%; min-width: 0; }
+.fb-form textarea:focus-visible, .fb-form input:focus-visible { outline-offset: 1px; }
+.fb-form textarea { min-height: 88px; resize: vertical; }
+.fb-send-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn.send { background: var(--mark); color: var(--panel); border-color: var(--mark); font-weight: 600; }
+.btn.send:hover { color: var(--panel); background: color-mix(in srgb, var(--mark) 88%, var(--text)); }
+/* Désactivé : couleurs explicites (comme la méta-interface), pas d'opacité. */
+.btn.send:disabled { color: var(--muted); background: var(--raised); border-color: var(--line); cursor: default; }
+.btn.small { font-size: 12.5px; padding: 2px 9px; min-height: 26px; }
+.btn.danger { color: var(--st-question); }
+.btn.danger:hover { color: var(--st-question); border-color: var(--st-question); }
+.fb-msg, .fb-help { font-size: 13px; color: var(--muted); }
+.fb-list { display: grid; gap: 8px; }
+.fb-item { border: 1px solid var(--line); border-left: 4px solid var(--st, var(--line)); border-radius: 6px; padding: 9px 11px; display: grid; gap: 6px; font-size: 13.5px; background: var(--panel); min-width: 0; }
+.fb-item .meta { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: 12px; color: var(--muted); }
+.fb-orphan { font-weight: 600; color: var(--st-question, var(--muted)); }
+.fb-pill { font-size: 11.5px; font-weight: 700; padding: 0 7px; line-height: 19px; border-radius: 999px; color: var(--st); background: color-mix(in srgb, var(--st) 12%, var(--panel)); }
+.fb-item .txt, .fb-item .reply, .fb-form .reply { white-space: pre-wrap; overflow-wrap: anywhere; }
+.fb-item .reply { background: var(--raised); border-radius: 6px; padding: 7px 10px; }
+.fb-form .reply { background: var(--panel); border-radius: 6px; padding: 7px 10px; font-size: 13.5px; }
+.fb-form .ctx { font-size: 14px; overflow-wrap: anywhere; }
+.fb-item .reply small, .fb-form .reply small { display: block; font: 600 12.5px var(--display, var(--body)); color: var(--muted); }
+.fb-item .acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.fb-item .goto { font-weight: 600; color: var(--text); cursor: pointer; background: none; border: none; padding: 0; font-size: 13.5px; text-align: left; text-decoration: underline; text-decoration-color: var(--line-strong, var(--line)); text-underline-offset: 3px; overflow-wrap: anywhere; }
+.fb-item .goto:hover { text-decoration-color: currentColor; }
+.st-nouveau { --st: var(--st-new); } .st-pris { --st: var(--st-taken); } .st-question { --st: var(--st-question); } .st-fait { --st: var(--st-done); } .st-refuse { --st: var(--st-refused); }
+@media (prefers-reduced-motion: no-preference) { .fb-panel:not([hidden]) { animation: slide .16s ease-out; } @keyframes slide { from { transform: translateX(16px); opacity: .7; } to { transform: none; opacity: 1; } } }
+
+/* Étape 3.9, L7 : tickets qui citent l'élément, au-dessus de son pied. */
+.fb-tk { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; font-size: 12.5px; color: var(--muted); }
+.fb-tk-l { font-weight: 600; }
+.fb-tk-t small { font-size: 12px; }
+
+/* Étape 3.9, lot 2 : champ visé (R3), « Moi aussi » (R6), fusion (R5), « pour » (E3). */
+.fb-item .fb-field, .fb-item .fb-pour { font-weight: 600; }
+.fb-aussi, .fb-merged { font-size: 12.5px; color: var(--muted); }
+.fb-champ-chip { display: flex; gap: 8px; align-items: center; margin: 0; font-size: 13px; }
+.fb-dup, .fb-confier { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12.5px; }
+.fb-dup select, .fb-confier select, .fb-form select { font: 13px var(--body, inherit); color: var(--text); background: var(--panel); border: 1px solid var(--field, var(--line-strong)); border-radius: 6px; padding: 3px 6px; max-width: 100%; min-width: 0; }
+.linkish { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+/* Étape 3.9, E5 : approbation nominative d'un point « À valider ». */
+.fb-appr { font-size: 12.5px; font-weight: 600; color: var(--st-done); }

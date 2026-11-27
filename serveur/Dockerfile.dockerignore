@@ -1,0 +1,12 @@
+# Contexte de build = racine du dépôt (docker build -f serveur/Dockerfile .) : seul le nécessaire entre dans l'image.
+*
+!serveur/package.json
+!VERSION
+!serveur/src
+!site/build.js
+!site/valider-notes.js
+!site/changements.js
+!site/gabarit
+!site/retours
+!serveur/ui
+serveur/ui/tests

@@ -1,0 +1,4 @@
+# Scripts Windows : fins de ligne CRLF dans toute copie de travail (cmd.exe lit mal un .cmd en LF).
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf

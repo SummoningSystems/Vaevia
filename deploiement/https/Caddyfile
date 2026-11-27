@@ -1,0 +1,15 @@
+# Caddy devant le serveur (étape 3.7, A2 ; docs/acces-distant.md) : certificats automatiques (Let's Encrypt), donc
+# un accès depuis Internet sur les ports 80 et 443 et deux noms DNS qui pointent vers cette machine.
+# Les deux noms vont au même serveur : il reconnaît l'administration et les Wikis par l'en-tête Host (WDD_URL,
+# WDD_URL_PAGES), que Caddy transmet tel quel.
+{$WDD_DOMAINE} {
+	encode gzip
+	reverse_proxy wdd:8080
+	header Strict-Transport-Security "max-age=31536000"
+}
+
+{$WDD_DOMAINE_PAGES} {
+	encode gzip
+	reverse_proxy wdd:8080
+	header Strict-Transport-Security "max-age=31536000"
+}

@@ -1,0 +1,678 @@
+<title>Site de retours</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Gabarit generique du skill « site-retours » : une page de revue construite a partir des vraies donnees d'un
+   projet (data.json, schema dans references/schema.md), avec un bouton de retour sur chaque element.
+   Aucune dependance externe : polices systeme, pas de CDN, tout est dans ce fichier.
+   Mise en page : bureau de relecture. En-tete sobre, onglets, sections en grilles de fiches ; chaque fiche
+   porte en pied sa reference stable (mono) et son crayon de retour ; un tiroir lateral pour ecrire et suivre. */
+:root {
+	--bg: #eef2f1; --panel: #fbfcfc; --raised: #e3e9e7; --line: #c8d2cf;
+	--text: #17201e; --muted: #56625e; --accent: #1d5a84; --mark: #b4412a;
+	--st-new: #9a6400; --st-taken: #1d5a84; --st-question: #b4412a; --st-done: #2c7347; --st-refused: #6f7b77;
+	--display: Charter, "Bitstream Charter", "Sitka Text", "Iowan Old Style", Cambria, Georgia, serif;
+	--body: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+	color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+	--bg: #111715; --panel: #18201e; --raised: #212b28; --line: #33403c;
+	--text: #e2eae7; --muted: #99a7a2; --accent: #79b2da; --mark: #ea8a6e;
+	--st-new: #deaa45; --st-taken: #79b2da; --st-question: #ea8a6e; --st-done: #74bf8e; --st-refused: #8a9893;
+	color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+	--bg: #111715; --panel: #18201e; --raised: #212b28; --line: #33403c;
+	--text: #e2eae7; --muted: #99a7a2; --accent: #79b2da; --mark: #ea8a6e;
+	--st-new: #deaa45; --st-taken: #79b2da; --st-question: #ea8a6e; --st-done: #74bf8e; --st-refused: #8a9893;
+	color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--body); margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 96px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+/* Textes longs sans espace (cle de config, route, chemin res://) : jamais de defilement horizontal a 390 px. */
+.wrap > *, .panel > *, .sec > * { min-width: 0; }
+h1, h2, h3, .eyebrow, .badge, .links a, .card li, dl.fields dt, .ttl > *, .fb-btn .lbl, .tl { overflow-wrap: anywhere; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.1; }
+h2 { font-size: 23px; line-height: 1.2; }
+h3 { font-size: 17px; line-height: 1.25; }
+p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 3px; }
+button { font-family: var(--body); }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--mono); }
+.eyebrow { font-size: 12px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+
+/* En-tete */
+header.top { display: grid; gap: 8px; }
+header.top .intro { max-width: 72ch; color: var(--muted); }
+.meta-line { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; font-size: 13.5px; color: var(--muted); }
+.meta-line a { font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--line); }
+.meta-line a:hover { border-color: var(--accent); }
+.meta-line b { font-variant-numeric: tabular-nums; color: var(--text); }
+
+/* Onglets et barre d'outils */
+nav.tabs { display: flex; flex-wrap: wrap; gap: 2px 4px; border-bottom: 1px solid var(--line); }
+nav.tabs button { font: 600 14px var(--body); color: var(--muted); background: transparent; border: 1px solid transparent; border-bottom: none; padding: 8px 12px; border-radius: 6px 6px 0 0; cursor: pointer; margin-bottom: -1px; display: inline-flex; gap: 6px; align-items: baseline; max-width: 100%; min-width: 0; text-align: left; }
+nav.tabs .tl { min-width: 0; }
+nav.tabs button:hover { color: var(--text); }
+nav.tabs button[aria-selected="true"] { color: var(--text); background: var(--panel); border-color: var(--line); }
+nav.tabs .n { font: 600 11.5px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+nav.tabs .n.zero { opacity: .55; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; justify-content: space-between; }
+.search { display: flex; gap: 8px; align-items: center; flex: 1 1 260px; min-width: 0; max-width: 420px; }
+.search label { font-size: 13px; color: var(--muted); }
+.search input { flex: 1; min-width: 0; font: 14px var(--body); color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; }
+.fb-top { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font: 600 13px var(--body); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer; }
+.btn:hover { border-color: var(--mark); color: var(--mark); }
+.note-off { font-size: 13px; color: var(--muted); max-width: 72ch; }
+
+/* Onglet, sections, fiches */
+.panel { display: grid; gap: 26px; }
+.tab-intro { max-width: 75ch; color: var(--muted); }
+.sec { display: grid; gap: 12px; scroll-margin-top: 16px; }
+.sec-head { display: grid; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.sec-head .how { font-size: 13.5px; color: var(--muted); max-width: 80ch; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-items: start; }
+@media (max-width: 460px) { .cards { grid-template-columns: minmax(0, 1fr); } }
+.card { display: grid; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px 10px; min-width: 0; scroll-margin-top: 16px; }
+.card.wide { grid-column: 1 / -1; }
+.card-head { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.card-head img { width: 56px; height: 56px; flex: none; object-fit: contain; background: var(--raised); border-radius: 4px; }
+.pixel .card-head img { image-rendering: pixelated; image-rendering: crisp-edges; }
+.ttl { display: grid; grid-template-columns: minmax(0, 1fr); flex: 1 1 auto; gap: 1px; min-width: 0; }
+.ttl .kind { font: 600 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.ttl .sub { font-size: 13px; color: var(--muted); }
+.badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.badge { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); background: transparent; }
+.badge.accent { color: var(--accent); border-color: var(--accent); }
+.badge.good { color: var(--st-done); border-color: var(--st-done); }
+.badge.warn { color: var(--st-new); border-color: var(--st-new); }
+.badge.bad { color: var(--mark); border-color: var(--mark); }
+dl.fields { display: grid; grid-template-columns: fit-content(45%) minmax(0, 1fr); gap: 3px 14px; margin: 0; font-size: 13.5px; }
+dl.fields dt { color: var(--muted); }
+dl.fields dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 600; overflow-wrap: anywhere; }
+.card .text { font-size: 14px; display: grid; gap: 6px; overflow-wrap: anywhere; }
+.card ul { margin: 0; padding-left: 18px; font-size: 13.5px; display: grid; gap: 2px; }
+.links { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
+.tbl { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 4px; }
+.tbl table { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; min-width: 100%; }
+.tbl th, .tbl td { padding: 4px 10px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl th { font-weight: 650; color: var(--muted); background: var(--raised); white-space: nowrap; }
+.tbl tr:last-child td { border-bottom: none; }
+.foot { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between; border-top: 1px dashed var(--line); padding-top: 7px; margin-top: 2px; }
+.ref { font: 11.5px var(--mono); color: var(--muted); overflow-wrap: anywhere; min-width: 0; }
+.empty { color: var(--muted); font-size: 14px; }
+.flash { outline: 2px solid var(--mark); outline-offset: 2px; }
+
+/* Notes datees : nouveautes, mesures, points a valider */
+.nset { display: grid; gap: 10px; }
+.nset-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.nset-head .date { font: 12px var(--mono); color: var(--muted); }
+.nset > .how { font-size: 13.5px; color: var(--muted); max-width: 80ch; }
+.ms { display: grid; gap: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 14px 6px; }
+.ms-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding: 8px 0 6px; }
+.ms-head .key { font: 700 12px var(--mono); color: var(--accent); }
+.ms-head .cnt, .ms-head code { font: 12px var(--mono); color: var(--muted); }
+.theme { font: 700 12px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 10px 0 2px; }
+.theme small { font-weight: 600; letter-spacing: 0; }
+.row { display: grid; gap: 6px 14px; padding: 9px 0; border-top: 1px dashed var(--line); font-size: 14px; scroll-margin-top: 16px; min-width: 0; }
+.row .foot { border-top: none; padding-top: 0; margin-top: 0; }
+.chg { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); }
+.chg .foot, .val .foot, .mrow .foot { grid-column: 1 / -1; }
+.chg .subj { font-weight: 650; }
+.chg small, .mrow small { display: block; font: 600 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.chg .before { color: var(--muted); }
+@media (max-width: 640px) { .chg { grid-template-columns: minmax(0, 1fr); } }
+.val { grid-template-columns: minmax(0, 1fr); }
+.val .dep { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.mrow { grid-template-columns: minmax(0, 1fr); }
+.ms > .row:first-child { border-top: none; }
+.mrow .lbl { font-weight: 650; }
+.steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.step { display: grid; background: var(--raised); border-radius: 4px; padding: 3px 8px; font-size: 12px; color: var(--muted); max-width: 100%; }
+.step b { font: 700 14px var(--body); color: var(--text); font-variant-numeric: tabular-nums; }
+.step.last { box-shadow: inset 0 0 0 1px var(--accent); }
+.mrow .target { font-size: 12.5px; color: var(--muted); }
+
+/* Retours : un bouton par element, un tiroir lateral, une liste de suivi */
+.fb-slot:empty { display: none; }
+.fb-btn { font: 600 12px var(--body); color: var(--muted); background: transparent; border: 1px dashed var(--line); border-radius: 999px; padding: 2px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.fb-btn:hover { color: var(--mark); border-color: var(--mark); border-style: solid; }
+.fb-btn .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--st, var(--muted)); }
+.fb-fab { position: fixed; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 40; font: 700 14px var(--body); padding: 10px 16px; border-radius: 999px; border: 1px solid var(--mark); background: var(--panel); color: var(--mark); cursor: pointer; box-shadow: 0 4px 14px color-mix(in srgb, var(--text) 20%, transparent); display: inline-flex; gap: 8px; align-items: center; }
+.fb-fab .n { font-variant-numeric: tabular-nums; background: var(--mark); color: var(--panel); border-radius: 999px; padding: 0 7px; font-size: 12px; }
+.fb-panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 50; width: min(460px, 100%); background: var(--panel); border-left: 1px solid var(--line); box-shadow: -8px 0 24px color-mix(in srgb, var(--text) 16%, transparent); display: grid; grid-template-rows: auto minmax(0, 1fr); padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.fb-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; padding: 16px 18px 12px; border-bottom: 1px solid var(--line); }
+.fb-head h3 { font-size: 20px; grid-column: 1 / -1; overflow-wrap: anywhere; }
+.fb-body { overflow-y: auto; padding: 14px 18px 24px; display: grid; gap: 14px; align-content: start; }
+.fb-form { display: grid; gap: 8px; background: var(--raised); border-radius: 6px; padding: 12px; }
+.fb-form label { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.fb-cats, .fb-filter { display: flex; flex-wrap: wrap; gap: 6px; }
+.fb-cats button, .fb-filter button { font: 600 12.5px var(--body); padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; }
+.fb-cats button[aria-pressed="true"], .fb-filter button[aria-pressed="true"] { color: var(--mark); border-color: var(--mark); box-shadow: inset 0 0 0 1px var(--mark); }
+.fb-form textarea, .fb-form input { font: 14px var(--body); color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; width: 100%; min-width: 0; }
+.fb-form textarea { min-height: 96px; resize: vertical; }
+.fb-send-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn.send { background: var(--mark); color: var(--panel); border-color: var(--mark); }
+.btn.send:hover { color: var(--panel); }
+.btn.send:disabled { opacity: .5; cursor: default; }
+.btn.small { font-size: 12px; padding: 3px 9px; }
+.btn.danger { color: var(--mark); }
+.fb-msg, .fb-help { font-size: 13px; color: var(--muted); }
+.fb-list { display: grid; gap: 10px; }
+.fb-item { border: 1px solid var(--line); border-left: 4px solid var(--st, var(--line)); border-radius: 4px; padding: 10px 12px; display: grid; gap: 6px; font-size: 13.5px; background: var(--panel); min-width: 0; }
+.fb-item .meta { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: 12px; color: var(--muted); }
+.fb-pill { font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; color: var(--st); border: 1px solid var(--st); }
+.fb-item .txt, .fb-item .reply, .fb-form .reply { white-space: pre-wrap; overflow-wrap: anywhere; }
+.fb-item .reply { background: var(--raised); border-radius: 4px; padding: 8px 10px; }
+.fb-form .reply { background: var(--panel); border-radius: 4px; padding: 8px 10px; font-size: 13.5px; }
+.fb-form .ctx { font-size: 14px; overflow-wrap: anywhere; }
+.fb-item .reply small, .fb-form .reply small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.fb-item .acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.fb-item .goto { font-weight: 700; color: var(--text); cursor: pointer; background: none; border: none; padding: 0; font-size: 13.5px; text-align: left; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; overflow-wrap: anywhere; }
+.st-nouveau { --st: var(--st-new); } .st-pris { --st: var(--st-taken); } .st-question { --st: var(--st-question); } .st-fait { --st: var(--st-done); } .st-refuse { --st: var(--st-refused); }
+@media (prefers-reduced-motion: no-preference) { .fb-panel:not([hidden]) { animation: slide .18s ease-out; } @keyframes slide { from { transform: translateX(24px); opacity: .6; } to { transform: none; opacity: 1; } } }
+</style>
+
+<div class="wrap" id="wrap">
+	<header class="top">
+		<span class="eyebrow" id="eyebrow"></span>
+		<h1 id="h1"></h1>
+		<p class="intro" id="intro"></p>
+		<div class="meta-line" id="meta-line"></div>
+	</header>
+	<nav class="tabs" role="tablist" id="tabs"></nav>
+	<div class="toolbar">
+		<div class="search" role="search">
+			<label for="q" id="q-label"></label>
+			<input id="q" type="search" autocomplete="off">
+		</div>
+		<div class="fb-top" id="fb-top" hidden>
+			<button type="button" class="btn" id="fb-general"></button>
+			<button type="button" class="btn" id="fb-all-top"></button>
+		</div>
+	</div>
+	<p class="note-off" id="fb-off" hidden></p>
+	<main id="panels"></main>
+</div>
+
+<button type="button" class="fb-fab" id="fb-fab" hidden><span id="fb-fab-l"></span><span class="n" id="fb-fab-n" hidden></span></button>
+<aside class="fb-panel" id="fb-panel" aria-labelledby="fb-title" hidden>
+	<div class="fb-head">
+		<span class="eyebrow" id="fb-eyebrow"></span>
+		<button type="button" class="btn small" id="fb-close"></button>
+		<h3 id="fb-title"></h3>
+	</div>
+	<div class="fb-body" id="fb-body"></div>
+</aside>
+
+<script>
+"use strict";
+// Donnees injectees par build.js (data.json du projet + notes datees fusionnees sous « notes.sets »).
+const DATA = /*__DATA__*/null;
+
+// Textes d'interface. Pour un projet dans une autre langue : modifier cet objet dans la copie du projet,
+// ou fournir « ui » dans data.json (memes cles ; fusion sur un niveau). {n}, {q}... sont remplaces.
+const UI = {
+	lang: "fr", locale: "fr-FR",
+	empty: "Page vide : construis-la avec build.js (node build.js data.json page.html).",
+	generated: "Données du {d}",
+	search: "Chercher", searchPh: "nom, texte, valeur…", searchNone: "Aucun résultat pour « {q} » dans cet onglet.",
+	emptyTab: "Rien dans cet onglet pour l'instant.",
+	tabsAria: "Onglets", yes: "Oui", no: "Non",
+	kinds: { nouveaute: "Nouveauté", mesure: "Mesure", validation: "À valider", general: "Remarque générale" },
+	notes: {
+		changes: "Nouveautés", measures: "Mesures", validations: "À valider",
+		changesHow: "Ce qui a changé, avant → après, jalon par jalon ; la série la plus récente d'abord.",
+		measuresHow: "Mesures datées, la série la plus récente d'abord ; la dernière valeur d'une suite est encadrée.",
+		validationsHow: "Points laissés à ta décision : un bouton par point pour répondre Validé, À revoir ou Question.",
+		before: "avant", after: "après", other: "Autres", point: "point", points: "points",
+		answered: "{a} sur {n} points ont une réponse.",
+	},
+	fb: {
+		retour: "✎ Retour", one: "retour", many: "retours", waiting: "en attente",
+		general: "✎ Remarque générale sur cet onglet", generalName: "Onglet « {t} »", all: "Tous les retours", allTitle: "Tous les retours", follow: "Suivi",
+		fab: "Retours", close: "Fermer", question: "question", questions: "questions",
+		offline: "Retours indisponibles ici : cette page est ouverte comme fichier. Ouvre la page publiée sur claude.ai pour écrire un retour.",
+		offlineForm: "Retours indisponibles ici : ouvre la page publiée sur claude.ai pour écrire un retour sur cet élément.",
+		unavailable: "Retours indisponibles pour ce lecteur (connecte-toi à claude.ai ou demande l'accès à la page).",
+		lost: "Les retours ne sont plus accessibles sur cette page ; recharge-la pour les retrouver.",
+		gone: "Ce retour n'existe plus ; ton texte est gardé.",
+		readOnly: "Ce lien permet de lire les retours, pas d'en écrire.",
+		type: "Type de retour", yours: "Ton retour", answer: "Réponse",
+		placeholder: "Ce qui ne va pas, ce que tu voudrais voir…",
+		proposal: "Valeur ou texte proposé (facultatif)", proposalPh: "ex. 6 au lieu de 4, ou un autre nom",
+		send: "Envoyer", sendAnswer: "Envoyer la réponse", cancel: "Annuler", sent: "Envoyé.",
+		replyQ: "Ta réponse à la question de Claude ; le retour repasse en attente.", replyP: "Une précision sur ce retour ; il repasse en attente.",
+		answerBtn: "Répondre", precise: "Ajouter une précision", del: "Supprimer", delOk: "Confirmer la suppression", keep: "Garder",
+		proposalLbl: "Proposition :", claude: "Réponse de Claude", answerWord: "Réponse", precisionWord: "Précision", of: "du",
+		needText: "Écris ton retour avant d'envoyer.", needCat: "Choisis un type de retour avant d'envoyer.",
+		full: "La base des retours est pleine : supprime d'anciens retours appliqués.", failed: "L'envoi n'a pas abouti. Réessaie dans un instant ; ton texte est gardé.",
+		late: "Les retours enregistrés ne répondent pas encore ; la liste peut être incomplète.",
+		help: "Quand tu as fini une série, dis à Claude « traite les retours » : il les lit, modifie le projet, puis répond ici dans chaque retour.",
+		seeAll: "Voir tous les retours", none: "Aucun retour sur cet élément pour l'instant.",
+		noneAll: "Aucun retour pour l'instant. Chaque élément a un bouton « ✎ Retour ».", noneCat: "Rien dans cette catégorie.",
+		cats: [["fort", "Trop fort"], ["faible", "Trop faible"], ["texte", "Texte ou nom"], ["idee", "Idée"], ["bug", "Bug"], ["autre", "Autre"]],
+		// Un point a valider, une nouveaute, une mesure ou une remarque generale a ses propres types, sans
+		// preselection (un accord ne doit jamais partir en « Trop fort » par megarde).
+		catsBy: {
+			general: [["idee", "Idée"], ["texte", "Présentation"], ["bug", "Bug"], ["autre", "Autre"]],
+			validation: [["valide", "Validé"], ["revoir", "À revoir"], ["question", "Question"], ["autre", "Autre"]],
+			nouveaute: [["valide", "Validé"], ["revoir", "À revoir"], ["fort", "Trop fort"], ["faible", "Trop faible"], ["texte", "Texte ou nom"], ["question", "Question"]],
+			mesure: [["question", "Question"], ["revoir", "À revoir"], ["idee", "Idée"], ["autre", "Autre"]],
+		},
+		status: { nouveau: "En attente", pris: "Pris en compte", question: "Question de Claude", fait: "Appliqué", refuse: "Non retenu" },
+		filters: { ouverts: "En attente", question: "Questions", pris: "Pris en compte", fait: "Appliqués", refuse: "Non retenus", tous: "Tous" },
+	},
+};
+if (DATA && DATA.ui && typeof DATA.ui === "object") for (const [k, v] of Object.entries(DATA.ui)) UI[k] = v && typeof v === "object" && !Array.isArray(v) && UI[k] && typeof UI[k] === "object" ? { ...UI[k], ...v } : v;
+document.documentElement.lang = UI.lang;
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = (s, v) => String(s).replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m);
+// Meme fonction que build.js : une ancre d'URL n'a que des lettres ASCII, des chiffres et des tirets simples.
+const slug = s => String(s).normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "x";
+const norm = s => String(s ?? "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+const fmtDate = iso => { try { const d = new Date(iso); return isNaN(d) ? String(iso || "") : d.toLocaleString(UI.locale, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (e) { return String(iso || ""); } };
+const KINDS = { ...UI.kinds, ...((DATA && DATA.kinds) || {}) };
+const kindLabel = k => KINDS[k] || k;
+const itemAnchor = (tab, id) => `${tab}--${slug(id)}`;
+const secAnchor = (tab, id) => `${tab}---${slug(id)}`;
+const fbAttr = (kind, id, name) => ` data-fb-kind="${esc(kind)}" data-fb-id="${esc(id)}" data-fb-name="${esc(name)}"`;
+const FOOT = (ref) => `<div class="foot"><code class="ref">${esc(ref)}</code><span class="fb-slot"></span></div>`;
+
+const wrap = document.getElementById("wrap");
+const panels = document.getElementById("panels");
+const TABS = [];
+
+function textBlock(t) { return `<div class="text">${String(t).split(/\n{2,}/).map(p => `<p>${esc(p).replace(/\n/g, "<br>")}</p>`).join("")}</div>`; }
+function linkHtml([label, href]) {
+	const h = String(href || "");
+	if (h.startsWith("#")) return `<a href="${esc(h)}" data-nav="${esc(h.slice(1))}">${esc(label)}</a>`;
+	if (/^https:\/\//.test(h)) return `<a href="${esc(h)}" target="_blank" rel="noopener">${esc(label)}</a>`;
+	return `<span>${esc(label)}</span>`;
+}
+// Nombres au format de la langue de la page (virgule decimale en francais) ; groupes de milliers a partir de
+// 10 000 seulement, pour qu'une annee reste « 2026 ». Une valeur a garder telle quelle s'ecrit en texte.
+const NF = (() => { try { return new Intl.NumberFormat(UI.locale, { maximumFractionDigits: 6, useGrouping: "min2" }); } catch (e) { try { return new Intl.NumberFormat(UI.locale, { maximumFractionDigits: 6, useGrouping: false }); } catch (e2) { return null; } } })();
+const cell = x => typeof x === "number" ? (NF ? NF.format(x) : String(x)) : typeof x === "boolean" ? (x ? UI.yes : UI.no) : String(x ?? "");
+const val = v => Array.isArray(v) ? v.map(cell).join(", ") : cell(v);
+function tableHtml(t) {
+	const head = Array.isArray(t.head) ? t.head : [];
+	return `<div class="tbl"><table>${head.length ? `<thead><tr>${head.map(h => `<th scope="col">${esc(cell(h))}</th>`).join("")}</tr></thead>` : ""}<tbody>${(t.rows || []).map(r => `<tr>${r.map(c => `<td>${esc(cell(c))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+function card(tab, it) {
+	const badges = (it.badges || []).map(b => typeof b === "string" ? { text: b } : b);
+	const fields = it.fields || [];
+	const tbl = it.table && Array.isArray(it.table.rows) ? it.table : null;
+	const search = norm([it.name, it.subtitle, kindLabel(it.kind), it.id, ...badges.map(b => b.text), ...fields.flat().map(val), it.text, ...(it.list || []), ...(tbl ? [...(tbl.head || []), ...tbl.rows.flat()].map(cell) : [])].join(" "));
+	return `<article class="card${it.wide ? " wide" : ""}" id="${esc(itemAnchor(tab.id, it.id))}" data-search="${esc(search)}"${fbAttr(it.kind, it.id, it.name)}>
+		<div class="card-head">${it.image ? `<img src="${esc(it.image)}" alt="" loading="lazy">` : ""}<div class="ttl"><span class="kind">${esc(kindLabel(it.kind))}</span><h3>${esc(it.name)}</h3>${it.subtitle ? `<span class="sub">${esc(it.subtitle)}</span>` : ""}</div></div>
+		${badges.length ? `<div class="badges">${badges.map(b => `<span class="badge ${esc(b.tone || "")}">${esc(b.text)}</span>`).join("")}</div>` : ""}
+		${fields.length ? `<dl class="fields">${fields.map(([l, v]) => `<dt>${esc(l)}</dt><dd>${esc(val(v))}</dd>`).join("")}</dl>` : ""}
+		${it.text ? textBlock(it.text) : ""}
+		${tbl ? tableHtml(tbl) : ""}
+		${it.list && it.list.length ? `<ul>${it.list.map(x => `<li>${esc(cell(x))}</li>`).join("")}</ul>` : ""}
+		${it.links && it.links.length ? `<div class="links">${it.links.map(linkHtml).join("")}</div>` : ""}
+		${FOOT(it.id)}
+	</article>`;
+}
+function dataTab(tab) {
+	const secs = tab.sections || [];
+	return (tab.intro ? `<p class="tab-intro">${esc(tab.intro)}</p>` : "") + (secs.length ? secs.map(s => `<section class="sec" id="${esc(secAnchor(tab.id, s.id))}">
+		<div class="sec-head"><h2>${esc(s.title)}</h2>${s.intro ? `<p class="how">${esc(s.intro)}</p>` : ""}</div>
+		<div class="cards">${(s.items || []).map(it => card(tab, it)).join("")}</div>
+	</section>`).join("") : `<p class="empty">${esc(UI.emptyTab)}</p>`);
+}
+
+// Notes datees (fusionnees par build.js, la serie la plus recente d'abord). Chaque ligne porte un bouton de retour
+// de sorte « nouveaute », « mesure » ou « validation », dont la ref est l'identifiant de la ligne.
+const SETS = DATA && DATA.notes && Array.isArray(DATA.notes.sets) ? DATA.notes.sets : [];
+const noteCount = key => SETS.reduce((n, s) => n + (s[key] || []).length, 0);
+const setHead = (s, fallback) => `<div class="nset-head"><h2>${esc(s.label || s.title || fallback)}</h2>${s.date ? `<span class="date">${esc(s.date)}</span>` : ""}${s.commit ? `<code class="ref">${esc(s.commit)}</code>` : ""}</div>`;
+function byMilestone(s, list, row, count) {
+	const ms = Object.keys(s.milestones || {});
+	const loose = list.filter(x => !ms.includes(x.milestone));
+	const groups = ms.filter(m => list.some(x => x.milestone === m)).map(m => [m, list.filter(x => x.milestone === m)]);
+	if (loose.length) groups.push(["", loose]);
+	return groups.map(([m, items]) => {
+		const themes = [...new Set(items.map(x => x.theme || ""))];
+		const body = themes.length > 1 || themes[0] ? themes.map(t => { const ti = items.filter(x => (x.theme || "") === t); return `<div class="theme">${esc(t || UI.notes.other)} <small>${ti.length}</small></div>${ti.map(row).join("")}`; }).join("") : items.map(row).join("");
+		const commit = (s.commits || {})[m];
+		return `<div class="ms"><div class="ms-head">${m ? `<span class="key">${esc(m)}</span><h3>${esc((s.milestones || {})[m] || m)}</h3>` : `<h3>${esc(UI.notes.other)}</h3>`}${commit ? `<code>${esc(commit)}</code>` : ""}${count ? `<span class="cnt">${items.length} ${items.length > 1 ? UI.notes.points : UI.notes.point}</span>` : ""}</div>${body}</div>`;
+	}).join("");
+}
+const chgRow = c => `<div class="row chg" id="nouveautes--${esc(slug(c.id))}" data-search="${esc(norm([c.subject, c.before, c.after, c.id].join(" ")))}"${fbAttr("nouveaute", c.id, `${c.milestone ? c.milestone + " · " : ""}${c.subject}`)}>
+	<span class="subj">${esc(c.subject)}</span><span class="before"><small>${esc(UI.notes.before)}</small>${esc(c.before ?? "—")}</span><span class="after"><small>${esc(UI.notes.after)}</small>${esc(c.after ?? "—")}</span>${FOOT(c.id)}</div>`;
+const mRow = m => `<div class="row mrow" id="mesures--${esc(slug(m.id))}" data-search="${esc(norm([m.label, m.target, m.id, ...(m.steps || []).map(s => s.when + " " + s.value)].join(" ")))}"${fbAttr("mesure", m.id, m.label)}>
+	<span class="lbl">${esc(m.label)}</span><div class="steps">${(m.steps || []).map((s, i, a) => `<span class="step${!m.list && i === a.length - 1 ? " last" : ""}">${esc(s.when)}<b>${esc(s.value)}</b></span>`).join("")}</div>${m.target ? `<span class="target">${esc(m.target)}</span>` : ""}${FOOT(m.id)}</div>`;
+const shortName = (t, n) => t.length <= n ? t : t.slice(0, Math.max(t.lastIndexOf(" ", n), 20)) + " …";
+const vRow = v => `<div class="row val" id="a-valider--${esc(slug(v.id))}" data-search="${esc(norm([v.text, v.theme, v.id, v.depends].join(" ")))}"${fbAttr("validation", v.id, `${v.milestone ? v.milestone + " · " : ""}${shortName(String(v.text), 90)}`)}>
+	<span>${esc(v.text)}${v.depends ? `<small class="dep">${esc(v.depends)}</small>` : ""}</span>${FOOT(v.id)}</div>`;
+function notesTab(key, how, render) {
+	const sets = SETS.filter(s => (s[key] || []).length);
+	return `<p class="tab-intro">${esc(how)}${key === "validations" ? ` <span id="val-progress"></span>` : ""}</p>` + sets.map(s => `<section class="nset">${setHead(s, UI.notes[key])}${s[key + "_note"] || (key === "changes" && s.intro) ? `<p class="how">${esc(s[key + "_note"] || s.intro)}</p>` : ""}${render(s, s[key])}</section>`).join("");
+}
+
+// Construction : onglets du projet puis, s'il y a des notes, Nouveautes / Mesures / A valider.
+if (!DATA) {
+	panels.innerHTML = `<p class="empty">${esc(UI.empty)}</p>`;
+} else {
+	document.getElementById("h1").textContent = DATA.title || "";
+	document.getElementById("eyebrow").textContent = DATA.subtitle || "";
+	document.getElementById("intro").textContent = DATA.intro || "";
+	if (DATA.pixelArt) wrap.classList.add("pixel");
+	for (const t of DATA.tabs || []) TABS.push({ id: t.id, label: t.label, html: dataTab(t) });
+	if (noteCount("changes")) TABS.push({ id: "nouveautes", label: UI.notes.changes, html: notesTab("changes", UI.notes.changesHow, (s, l) => byMilestone(s, l, chgRow, false)), note: "changes" });
+	if (noteCount("measures")) TABS.push({ id: "mesures", label: UI.notes.measures, html: notesTab("measures", UI.notes.measuresHow, (s, l) => `<div class="ms">${l.map(mRow).join("")}</div>`), note: "measures" });
+	if (noteCount("validations")) TABS.push({ id: "a-valider", label: UI.notes.validations, html: notesTab("validations", UI.notes.validationsHow, (s, l) => byMilestone(s, l, vRow, true)), note: "validations" });
+	document.getElementById("tabs").setAttribute("aria-label", UI.tabsAria);
+	document.getElementById("tabs").innerHTML = TABS.map(t => `<button type="button" role="tab" id="t-${esc(t.id)}" data-tab-btn="${esc(t.id)}" aria-controls="tab-${esc(t.id)}" aria-selected="false"><span class="tl">${esc(t.label)}</span><span class="n" hidden></span></button>`).join("");
+	panels.innerHTML = TABS.map(t => `<section class="panel" role="tabpanel" id="tab-${esc(t.id)}" data-tab="${esc(t.id)}" aria-labelledby="t-${esc(t.id)}" hidden>${t.html}</section>`).join("");
+	const meta = [];
+	if (DATA.generated) meta.push(`<span>${esc(fmt(UI.generated, { d: fmtDate(DATA.generated) }))}</span>`);
+	for (const t of TABS.filter(x => x.note)) meta.push(`<a href="#${t.id}" data-nav="${t.id}">${esc(t.label)} · <b>${noteCount(t.note)}</b></a>`);
+	document.getElementById("meta-line").innerHTML = meta.join("");
+}
+document.getElementById("q-label").textContent = UI.search;
+document.getElementById("q").placeholder = UI.searchPh;
+
+// Onglets, ancres d'URL (#onglet, #onglet--element, #onglet---section) et recherche.
+let curTab = "";
+function openTab(id) {
+	if (!TABS.some(t => t.id === id)) id = TABS.length ? TABS[0].id : "";
+	curTab = id;
+	for (const t of TABS) { document.getElementById("tab-" + t.id).hidden = t.id !== id; document.getElementById("t-" + t.id).setAttribute("aria-selected", String(t.id === id)); }
+	applySearch();
+}
+function setHash(h) { try { history.replaceState(null, "", "#" + h); } catch (e) { } }
+function flash(el) {
+	if (!el) return;
+	el.scrollIntoView({ block: "center" });
+	el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1600);
+}
+function route(h) {
+	h = decodeURIComponent(h || "");
+	if (TABS.some(t => t.id === h)) { openTab(h); window.scrollTo(0, 0); return; }
+	const el = h && document.getElementById(h);
+	const panel = el && el.closest("[data-tab]");
+	if (panel) { openTab(panel.dataset.tab); requestAnimationFrame(() => flash(el)); return; }
+	openTab(TABS.length ? TABS[0].id : "");
+}
+document.getElementById("tabs").addEventListener("click", e => { const b = e.target.closest("[data-tab-btn]"); if (!b) return; openTab(b.dataset.tabBtn); setHash(b.dataset.tabBtn); });
+wrap.addEventListener("click", e => { const a = e.target.closest("a[data-nav]"); if (!a) return; e.preventDefault(); setHash(a.dataset.nav); route(a.dataset.nav); });
+window.addEventListener("hashchange", () => route(location.hash.slice(1)));
+
+const qInput = document.getElementById("q");
+function applySearch() {
+	const q = norm(qInput.value.trim());
+	for (const t of TABS) {
+		const panel = document.getElementById("tab-" + t.id);
+		const rows = panel.querySelectorAll("[data-search]");
+		let n = 0;
+		rows.forEach(r => { const hit = !q || q.split(/\s+/).every(w => r.dataset.search.includes(w)); if (hit) n++; if (t.id === curTab || !q) r.hidden = !hit; });
+		panel.querySelectorAll(".sec, .ms, .nset").forEach(s => { s.hidden = !!q && t.id === curTab && !s.querySelector("[data-search]:not([hidden])"); });
+		const badge = document.querySelector(`#t-${CSS.escape(t.id)} .n`);
+		badge.hidden = !q; badge.textContent = String(n); badge.classList.toggle("zero", !n);
+		let none = panel.querySelector(":scope > .search-none");
+		if (t.id === curTab && q && !n) { if (!none) { none = document.createElement("p"); none.className = "empty search-none"; panel.appendChild(none); } none.textContent = fmt(UI.searchNone, { q: qInput.value.trim() }); }
+		else if (none) none.remove();
+	}
+}
+qInput.addEventListener("input", applySearch);
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+route(location.hash.slice(1));
+
+// Retours, gardes dans la base de l'artefact (collection « retours ») ; Claude les lit, les applique au projet,
+// puis repond dans chaque retour (status, reply, replied). Champs : kind, ref, name, tab, anchor, cat, text,
+// proposal, status, reply, replied, created, updated, by, codex (= DATA.generated, la version de la page commentee).
+const F = UI.fb;
+const fbCats = kind => F.catsBy[kind] || F.cats;
+const fbDefaultCat = kind => F.catsBy[kind] ? "" : F.cats[0][0];
+const FB_CAT_LABEL = Object.fromEntries([...F.cats, ...Object.values(F.catsBy).flat()]);
+const catLabel = (kind, cat) => ((fbCats(kind).find(c => c[0] === cat) || [])[1]) || FB_CAT_LABEL[cat] || cat || "";
+// offline : "" (base branchee), "file" (hors de claude.ai), "nodb" (claude.ai sans base pour ce lecteur).
+// late : la base n'a pas encore repondu au bout de 10 s ; lost : l'ecoute est morte (revoked ou erreur repetee).
+const fb = { col: null, uid: null, owner: false, all: [], target: null, view: "element", filter: "ouverts", cat: "", replyTo: null, confirmDel: null, sending: false, readOnly: false, offline: "", late: false, lost: false };
+const fbPanel = document.getElementById("fb-panel");
+const fbBody = document.getElementById("fb-body");
+const fbOpen = r => r.status === "nouveau" || r.status === "question";
+const fbFor = (kind, id) => fb.all.filter(r => r.kind === kind && String(r.ref) === String(id));
+const newest = (a, b) => String(b.created).localeCompare(String(a.created));
+document.getElementById("fb-general").textContent = F.general;
+document.getElementById("fb-all-top").textContent = F.all;
+document.getElementById("fb-fab-l").textContent = F.fab;
+document.getElementById("fb-close").textContent = F.close;
+// Note sous les onglets : page hors base, base muette ou ecoute perdue.
+function fbNote() {
+	const t = fb.offline === "file" ? F.offline : fb.offline ? F.unavailable : fb.lost ? F.lost : fb.late ? F.late : "";
+	const n = document.getElementById("fb-off");
+	n.textContent = t; n.hidden = !t;
+}
+// Supprimer : ses propres retours, ou tous pour le proprietaire de la page (les droits de la base sont plus larges).
+const fbCanDel = r => fb.owner || (fb.uid ? r.by === fb.uid : !r.by);
+
+function fbCtx(el) { const p = el.closest("[data-tab]"); return { tab: p ? p.dataset.tab : "", anchor: el.id || "" }; }
+// Un bouton par element marque ; ne reecrit que ce qui change.
+function fbDecorate() {
+	if (!fb.col && !fb.offline) return;
+	document.querySelectorAll("[data-fb-kind]").forEach(el => {
+		const slot = el.querySelector(".fb-slot"); if (!slot) return;
+		let btn = slot.firstElementChild;
+		if (!btn) { slot.innerHTML = `<button type="button" class="fb-btn"><span class="dot" hidden></span><span class="lbl"></span></button>`; btn = slot.firstElementChild; }
+		const list = fbFor(el.dataset.fbKind, el.dataset.fbId).sort(newest);
+		const open = list.filter(fbOpen).length;
+		let lbl = F.retour;
+		const q = list.filter(r => r.status === "question").length;
+		if (list.length && F.catsBy[el.dataset.fbKind] && list[0].cat) lbl = `✎ ${catLabel(el.dataset.fbKind, list[0].cat)} · ${F.status[list[0].status] || list[0].status}${list.length > 1 ? ` · +${list.length - 1}` : ""}`;
+		else if (list.length) lbl = `✎ ${list.length} ${list.length > 1 ? F.many : F.one}${q ? ` · ${q} ${q > 1 ? F.questions : F.question}` : open ? ` · ${open} ${F.waiting}` : ""}`;
+		const span = btn.querySelector(".lbl"), dot = btn.querySelector(".dot");
+		if (span.textContent !== lbl) span.textContent = lbl;
+		const cls = list.length ? "fb-btn st-" + (list.some(r => r.status === "question") ? "question" : open ? "nouveau" : list[0].status) : "fb-btn";
+		if (btn.className !== cls) btn.className = cls;
+		if (dot.hidden !== !list.length) dot.hidden = !list.length;
+	});
+	const vp = document.getElementById("val-progress");
+	if (vp && fb.col) { const ids = SETS.flatMap(s => s.validations || []).map(v => String(v.id)); const a = ids.filter(id => fbFor("validation", id).length).length; vp.textContent = fmt(UI.notes.answered, { a, n: ids.length }); }
+}
+
+function fbGoto(r) {
+	const el = (r.anchor && document.getElementById(r.anchor)) || [...document.querySelectorAll("[data-fb-kind]")].find(x => x.dataset.fbKind === r.kind && x.dataset.fbId === String(r.ref));
+	const tab = el ? fbCtx(el).tab : r.tab;
+	if (!tab) return;
+	openTab(tab); setHash(el && el.id ? el.id : tab);
+	if (el) requestAnimationFrame(() => flash(el)); else window.scrollTo(0, 0);
+	if (window.innerWidth < 900) fbClose();
+}
+
+function fbItem(r, withTarget) {
+	const cat = catLabel(r.kind, r.cat);
+	const acts = [];
+	if (!fb.readOnly) {
+		acts.push(`<button type="button" class="btn small" data-reply="${esc(r.id)}">${esc(r.status === "question" ? F.answerBtn : F.precise)}</button>`);
+		if (fbCanDel(r)) acts.push(fb.confirmDel === r.id ? `<button type="button" class="btn small danger" data-del-ok="${esc(r.id)}">${esc(F.delOk)}</button><button type="button" class="btn small" data-del-no="1">${esc(F.keep)}</button>` : `<button type="button" class="btn small danger" data-del="${esc(r.id)}">${esc(F.del)}</button>`);
+	}
+	return `<div class="fb-item st-${esc(r.status)}">
+		${withTarget ? `<button type="button" class="goto" data-goto="${esc(r.id)}">${esc(r.name || r.ref)}</button>` : ""}
+		<div class="meta"><span class="fb-pill">${esc(F.status[r.status] || r.status)}</span>${withTarget ? `<span>${esc(kindLabel(r.kind))}</span>` : ""}${cat ? `<span>${esc(cat)}</span>` : ""}<span>${esc(fmtDate(r.created))}</span></div>
+		<div class="txt">${esc(r.text)}</div>
+		${r.proposal ? `<div><b>${esc(F.proposalLbl)}</b> ${esc(r.proposal)}</div>` : ""}
+		${r.reply ? `<div class="reply"><small>${esc(F.claude)}${r.replied ? " · " + esc(fmtDate(r.replied)) : ""}</small>${esc(r.reply)}</div>` : ""}
+		${acts.length ? `<div class="acts">${acts.join("")}</div>` : ""}
+	</div>`;
+}
+
+function fbForm() {
+	if (fb.offline) return `<p class="fb-msg">${esc(fb.offline === "file" ? F.offlineForm : F.unavailable)}</p>`;
+	if (fb.lost) return `<p class="fb-msg">${esc(F.lost)}</p>`;
+	if (fb.readOnly) return `<p class="fb-msg">${esc(F.readOnly)}</p>`;
+	const reply = fb.replyTo && fb.all.find(r => r.id === fb.replyTo);
+	// En reponse : rappeler l'element et la question (la liste peut etre hors de l'ecran, ou ce soit la vue « Tous »).
+	const ctx = reply ? `<p class="ctx"><b>${esc(reply.name || reply.ref)}</b></p>${reply.reply ? `<div class="reply"><small>${esc(F.claude)}</small>${esc(reply.reply)}</div>` : ""}` : "";
+	return `<form class="fb-form" id="fb-form">
+		${reply ? `${ctx}<p class="fb-msg">${esc(reply.status === "question" ? F.replyQ : F.replyP)}</p>` : `<label>${esc(F.type)}</label><div class="fb-cats">${fbCats(fb.target.kind).map(([k, l]) => `<button type="button" data-cat="${esc(k)}" aria-pressed="${k === fb.cat}">${esc(l)}</button>`).join("")}</div>`}
+		<label for="fb-text">${esc(reply ? F.answer : F.yours)}</label>
+		<textarea id="fb-text" placeholder="${esc(reply ? "" : F.placeholder)}"></textarea>
+		${reply ? "" : `<label for="fb-prop">${esc(F.proposal)}</label><input id="fb-prop" type="text" placeholder="${esc(F.proposalPh)}">`}
+		<div class="fb-send-row"><button type="submit" class="btn send" id="fb-send">${esc(reply ? F.sendAnswer : F.send)}</button>${reply ? `<button type="button" class="btn" data-reply-cancel="1">${esc(F.cancel)}</button>` : ""}<span class="fb-msg" id="fb-status" role="status"></span></div>
+	</form>`;
+}
+// Le formulaire et la liste se redessinent separement : un retour qui arrive ne coupe pas la saisie.
+function fbRender() {
+	if (fbPanel.hidden) return;
+	const el = fb.view === "element";
+	document.getElementById("fb-eyebrow").textContent = el ? kindLabel(fb.target.kind) : F.follow;
+	document.getElementById("fb-title").textContent = el ? fb.target.name : F.allTitle;
+	if (fb.offline) { fbBody.innerHTML = `<div id="fb-formwrap"></div>`; fbRenderForm(); return; }
+	fbBody.innerHTML = `<div id="fb-formwrap"></div><div id="fb-listwrap" style="display:grid;gap:10px"></div>` + (el ? `<p class="fb-help">${esc(F.help)}</p><button type="button" class="btn" data-all="1" style="justify-self:start">${esc(F.seeAll)}</button>` : "");
+	fbRenderForm(); fbRenderList();
+}
+function fbRenderForm() {
+	const w = document.getElementById("fb-formwrap"); if (!w) return;
+	const keep = document.getElementById("fb-text")?.value || "";
+	w.innerHTML = fb.view === "element" || fb.replyTo ? fbForm() : "";
+	const ta = document.getElementById("fb-text"); if (ta && keep && !fb.replyTo) ta.value = keep;
+}
+// Le retour auquel on repondait a disparu (supprime ailleurs) : on le dit et le texte saisi n'est pas perdu.
+function fbDropReply() {
+	const keep = (document.getElementById("fb-text")?.value || "").trim();
+	fb.replyTo = null; fbRenderForm();
+	const w = document.getElementById("fb-formwrap"); if (!w) return;
+	const s = document.getElementById("fb-status");
+	if (s) s.textContent = F.gone;
+	else w.innerHTML = `<div class="fb-form"><p class="fb-msg" role="status">${esc(F.gone)}</p>${keep ? `<div class="reply">${esc(keep)}</div>` : ""}</div>`;
+}
+function fbRenderList() {
+	const w = document.getElementById("fb-listwrap"); if (!w || fbPanel.hidden) return;
+	// Base muette ou ecoute perdue : le dire en tete de liste, tant que l'etat dure (pas seulement a l'instant ou il survient).
+	const warn = fb.lost ? F.lost : fb.late ? F.late : "";
+	const warnHtml = warn ? `<p class="fb-msg" role="status">${esc(warn)}</p>` : "";
+	if (fb.view === "element") {
+		const list = fbFor(fb.target.kind, fb.target.id).sort(newest);
+		w.innerHTML = warnHtml + (list.length ? `<div class="fb-list">${list.map(r => fbItem(r, false)).join("")}</div>` : warn ? "" : `<p class="fb-help">${esc(F.none)}</p>`);
+		return;
+	}
+	const FL = [["ouverts", fbOpen], ["question", r => r.status === "question"], ["pris", r => r.status === "pris"], ["fait", r => r.status === "fait"], ["refuse", r => r.status === "refuse"], ["tous", () => true]];
+	const f = FL.find(x => x[0] === fb.filter) || FL[0];
+	const list = fb.all.filter(f[1]).sort(newest);
+	w.innerHTML = warnHtml + `<div class="fb-filter">${FL.map(([k, p]) => `<button type="button" data-filter="${k}" aria-pressed="${k === f[0]}">${esc(F.filters[k])} · ${fb.all.filter(p).length}</button>`).join("")}</div>` +
+		(list.length ? `<div class="fb-list">${list.map(r => fbItem(r, true)).join("")}</div>` : `<p class="fb-help">${esc(fb.all.length ? F.noneCat : F.noneAll)}</p>`);
+}
+function fbRefreshFab() {
+	const n = fb.all.filter(fbOpen).length, q = fb.all.filter(r => r.status === "question").length;
+	const b = document.getElementById("fb-fab-n");
+	b.hidden = !n; b.textContent = q ? `${n} · ${q} ${q > 1 ? F.questions : F.question}` : String(n);
+}
+function fbShow(view, target) {
+	fb.view = view; fb.replyTo = null; fb.confirmDel = null;
+	// Le type repart de zero a chaque element : un « Bug » choisi sur une fiche ne suit pas sur la suivante.
+	if (target) { fb.target = target; fb.cat = fbDefaultCat(target.kind); }
+	fbPanel.hidden = false; fbRender();
+	(document.getElementById("fb-text") || document.getElementById("fb-close")).focus({ preventScroll: true });
+}
+function fbClose() { fbPanel.hidden = true; }
+
+async function fbSubmit() {
+	const text = document.getElementById("fb-text").value.trim();
+	const st = document.getElementById("fb-status");
+	if (!text) { st.textContent = F.needText; return; }
+	if (!fb.replyTo && !fbCats(fb.target.kind).some(c => c[0] === fb.cat)) { st.textContent = F.needCat; return; }
+	if (fb.sending) return;
+	fb.sending = true; document.getElementById("fb-send").disabled = true;
+	const now = new Date().toISOString();
+	const wasReply = !!fb.replyTo;
+	try {
+		if (fb.replyTo) {
+			const r = fb.all.find(x => x.id === fb.replyTo);
+			await fb.col.doc(fb.replyTo).update({ text: `${r.text}\n\n— ${r.status === "question" ? F.answerWord : F.precisionWord} ${F.of} ${fmtDate(now)} : ${text}`, status: "nouveau", updated: now });
+			fb.replyTo = null;
+		} else {
+			const t = fb.target;
+			await fb.col.add({ kind: t.kind, ref: String(t.id), name: t.name, tab: t.tab, anchor: t.anchor, cat: fb.cat, text, proposal: (document.getElementById("fb-prop")?.value || "").trim(), status: "nouveau", reply: "", replied: "", created: now, updated: now, by: fb.uid || "", codex: (DATA && DATA.generated) || "" });
+		}
+		document.getElementById("fb-text").value = "";
+		fbRenderForm(); fbRenderList();
+		const s2 = document.getElementById("fb-status"); if (s2) s2.textContent = F.sent;
+	} catch (e) {
+		const code = e && e.code;
+		// invalid_argument sur add() = droit d'ecriture insuffisant : lecture seule pour la visite. Sur update(), c'est
+		// aussi le code d'un retour supprime entre-temps : on ne bloque que cette reponse, et le texte reste.
+		if ((code === "invalid_argument" || code === "transform_error") && !wasReply) { fb.readOnly = true; fbRenderForm(); fbRenderList(); }
+		else if (code === "invalid_argument" && wasReply) fbDropReply();
+		else if (code === "revoked") { fb.lost = true; fbNote(); fbRenderForm(); fbRenderList(); }
+		else { const s2 = document.getElementById("fb-status"); if (s2) s2.textContent = code === "quota_exceeded" ? F.full : F.failed; }
+	} finally {
+		fb.sending = false; const b = document.getElementById("fb-send"); if (b) b.disabled = false;
+	}
+}
+
+document.addEventListener("click", e => {
+	const b = e.target.closest(".fb-btn"); if (!b) return;
+	const el = b.closest("[data-fb-kind]");
+	fbShow("element", { kind: el.dataset.fbKind, id: el.dataset.fbId, name: el.dataset.fbName, ...fbCtx(el) });
+});
+document.getElementById("fb-general").addEventListener("click", () => {
+	const t = TABS.find(x => x.id === curTab); if (!t) return;
+	fbShow("element", { kind: "general", id: t.id, name: fmt(F.generalName, { t: t.label }), tab: t.id, anchor: "" });
+});
+document.getElementById("fb-all-top").addEventListener("click", () => fbShow("all"));
+document.getElementById("fb-fab").addEventListener("click", () => fbPanel.hidden || fb.view !== "all" ? fbShow("all") : fbClose());
+document.getElementById("fb-close").addEventListener("click", fbClose);
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !fbPanel.hidden) fbClose(); });
+fbPanel.addEventListener("submit", e => { e.preventDefault(); fbSubmit(); });
+fbPanel.addEventListener("click", async e => {
+	const t = e.target.closest("button"); if (!t) return;
+	const d = t.dataset;
+	if (d.cat) { fb.cat = d.cat; fbPanel.querySelectorAll(".fb-cats button").forEach(x => x.setAttribute("aria-pressed", String(x === t))); }
+	else if (d.filter) { fb.filter = d.filter; fbRenderList(); }
+	else if (d.all) fbShow("all");
+	else if (d.goto) { const r = fb.all.find(x => x.id === d.goto); if (r) fbGoto(r); }
+	else if (d.reply) { fb.replyTo = d.reply; fbRenderForm(); document.getElementById("fb-text").focus(); fbBody.scrollTo(0, 0); }
+	else if (d.replyCancel) { fb.replyTo = null; fbRenderForm(); }
+	else if (d.del) { fb.confirmDel = d.del; fbRenderList(); }
+	else if (d.delNo) { fb.confirmDel = null; fbRenderList(); }
+	else if (d.delOk) { fb.confirmDel = null; try { await fb.col.doc(d.delOk).delete(); } catch (err) { fbRenderList(); } }
+});
+
+// Branche la base quand le lecteur claude.ai la fournit (capacites db + user declarees a la premiere publication).
+// Hors de claude.ai (fichier local, captures), la page reste lisible : boutons visibles, retours indisponibles.
+// use() renvoie null aussi sur claude.ai (lecteur deconnecte, capacite non accordee) : on distingue ce cas du fichier local.
+(async () => {
+	if (!DATA) return;
+	let db = null, user = null;
+	try { db = await window.claude?.use?.("db"); } catch (e) { db = null; }
+	if (!db) { fb.offline = window.claude ? "nodb" : "file"; fbNote(); fbDecorate(); return; }
+	try {
+		user = await window.claude.use("user");
+		if (user) {
+			fb.uid = (await user.id()) || null;
+			fb.owner = user.isOwner ? (await user.isOwner()) === true : false;
+			if (user.can && (await user.can("data.write")) === false) fb.readOnly = true;
+		}
+	} catch (e) { }
+	fb.col = db.collection("retours");
+	document.getElementById("fb-top").hidden = false;
+	document.getElementById("fb-fab").hidden = false;
+	fbDecorate();
+	const refresh = () => { fbNote(); fbRenderForm(); fbRenderList(); };
+	let late = 0, retried = false;
+	const arm = () => { clearTimeout(late); late = setTimeout(() => { fb.late = true; refresh(); }, 10000); };
+	// Apres une erreur, l'ecoute est morte : un seul nouvel abonnement (sauf revoked, definitif), puis on le dit.
+	const listen = () => fb.col.onSnapshot(snap => {
+		if (!snap.metadata || !snap.metadata.fromCache) { clearTimeout(late); if (fb.late) { fb.late = false; fbNote(); fbRenderForm(); } }
+		fb.all = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+		if (fb.replyTo && !fb.all.some(r => r.id === fb.replyTo)) fbDropReply();
+		fbDecorate(); fbRefreshFab(); fbRenderList();
+	}, e => {
+		clearTimeout(late);
+		if (!retried && !(e && e.code === "revoked")) { retried = true; arm(); setTimeout(listen, 1500 + Math.random() * 1000); return; }
+		fb.lost = true; fb.late = false; refresh();
+	});
+	arm(); listen();
+})();
+</script>

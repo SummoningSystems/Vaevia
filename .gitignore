@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.tmp/
+*.log
+# pages de banc et sorties de tests : jamais commitées
+banc*.html
+t_*.html
+cadre390.html
+dom_*.html
+# réglages locaux de Docker Compose (voir .env.exemple), et leurs variantes (--env-file .env.prod) : jamais commités
+.env
+.env.*
+!.env.exemple

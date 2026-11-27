@@ -1,0 +1,10 @@
+{
+  "name": "wdd-outils",
+  "private": true,
+  "description": "Installeur Windows du serveur (docs/etape3-5-prise-en-main.md § 1.2) et son test : Node 24, aucune dépendance.",
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "test": "node --test \"test/*.test.ts\""
+  }
+}

@@ -1,0 +1,810 @@
+<title>Site de retours</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Gabarit d'affichage du site de retours : une page de revue construite a partir des vraies donnees d'un projet
+   (data.json, schema dans site/SCHEMA.md), avec un bouton de retour sur chaque element.
+   Ce fichier ne garde que l'affichage ; le systeme de retours (retours.js, retours.css) et l'adaptateur de stockage
+   (stockage-<nom>.js) sont injectes par site/build.js aux reperes RETOURS_CSS, RETOURS, STOCKAGE et DATA.
+   Hotes du module retours dans la page (ids imposes par retours.js) : #fb-top, #fb-off, #fb-fab, #fb-panel.
+   La page construite reste un seul fichier : aucune dependance externe, polices systeme, pas de CDN.
+   Mise en page (direction « Studio », etape 3.10, comme la meta-interface et son bandeau : serveur/ui/ui.css,
+   serveur/src/bandeau.ts) : neutres bleutes, un accent indigo (--mark pour les actions pleines, --accent pour les
+   liens), couleurs de statut lisibles d'un coup d'oeil (memes que la meta-interface), titres en Bahnschrift (police de
+   Windows, replis systeme ; aucune police externe). Les grandes surfaces restent calmes. Geometrie de la direction
+   precedente (« Atelier », etape 3.6) : onglets en controle segmente (le soulignement reste au bandeau), sections en
+   grilles de fiches ; chaque fiche porte en pied sa reference stable (mono) et son bouton de retour ; un tiroir lateral
+   pour ecrire et suivre. */
+:root {
+	--bg: #eceef4; --panel: #ffffff; --raised: #e4e7ef; --line: #d3d7e3; --line-strong: #b3b9cc; --field: #7c839e;
+	--text: #171a2e; --muted: #4c5370; --accent: #3a2fb3; --accent-bg: #e9e6fc; --mark: #4536c9; --focus: #c2410c;
+	--st-new: #8a4b00; --st-taken: #1d48c4; --st-question: #ad1550; --st-done: #17713d; --st-refused: #555b70;
+	--body: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+	--display: Bahnschrift, "DIN Alternate", "Barlow Semi Condensed", "Roboto Condensed", "Segoe UI", system-ui, sans-serif;
+	--mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+	--gutter: 16px;
+	color-scheme: light;
+}
+@media (min-width: 64rem) { :root { --gutter: 24px; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+	--bg: #121527; --panel: #1a1e35; --raised: #242946; --line: #323858; --line-strong: #4a5180; --field: #767da6;
+	--text: #e9ebf7; --muted: #a8aecb; --accent: #b5acff; --accent-bg: #2b2655; --mark: #a197ff; --focus: #ff9d4d;
+	--st-new: #ffc46b; --st-taken: #9db5ff; --st-question: #ff9cc0; --st-done: #83e3a8; --st-refused: #aeb4ca;
+	color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+	--bg: #121527; --panel: #1a1e35; --raised: #242946; --line: #323858; --line-strong: #4a5180; --field: #767da6;
+	--text: #e9ebf7; --muted: #a8aecb; --accent: #b5acff; --accent-bg: #2b2655; --mark: #a197ff; --focus: #ff9d4d;
+	--st-new: #ffc46b; --st-taken: #9db5ff; --st-question: #ff9cc0; --st-done: #83e3a8; --st-refused: #aeb4ca;
+	color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--body); margin: 0; font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 20px 96px; padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: max(var(--gutter), env(safe-area-inset-right, 0px)); display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+/* Textes longs sans espace (cle de config, route, chemin res://) : jamais de defilement horizontal a 390 px. */
+.wrap > *, .panel > *, .sec > * { min-width: 0; }
+h1, h2, h3, .eyebrow, .badge, .links a, .card li, dl.fields dt, .ttl > *, .fb-btn .lbl, .tl { overflow-wrap: anywhere; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; letter-spacing: 0; }
+h1 { font-size: clamp(24px, 3.4vw, 30px); line-height: 1.15; font-weight: 700; }
+h2 { font-size: 19px; line-height: 1.25; }
+h3 { font-size: 17px; line-height: 1.3; }
+p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:hover { text-decoration-thickness: 2px; }
+button { font-family: var(--body); }
+/* Focus : anneau orange de 3 px, distinct de l'accent (onglet choisi, bouton principal), comme la meta-interface. */
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+::placeholder { color: var(--muted); opacity: 1; }
+code, .mono { font-family: var(--mono); }
+.eyebrow { font: 600 14px/1.3 var(--display); color: var(--muted); }
+.muted { color: var(--muted); }
+
+/* En-tete */
+header.top { display: grid; gap: 6px; }
+header.top .intro { max-width: 72ch; color: var(--muted); }
+.meta-line { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; font-size: 13px; color: var(--muted); }
+.meta-line a { font-weight: 500; text-decoration: none; color: var(--text); border-bottom: 1px solid var(--line-strong); }
+.meta-line a:hover { border-color: var(--accent); color: var(--accent); }
+.meta-line b { font: 700 14px/1 var(--display); font-variant-numeric: tabular-nums; color: var(--text); }
+
+/* Onglets et barre d'outils */
+/* Onglets du Wiki : un contrôle segmenté (pastilles sur un fond --raised, l'onglet choisi en surface pleine avec un bord),
+   pour qu'ils ne se confondent pas avec la navigation du bandeau, au-dessus, qui garde seule le soulignement d'accent. */
+nav.tabs { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; background: var(--raised); border-radius: 8px; width: fit-content; max-width: 100%; }
+nav.tabs button { font: 500 14px var(--body); color: var(--muted); background: transparent; border: 1px solid transparent; padding: 5px 10px; border-radius: 6px; cursor: pointer; display: inline-flex; gap: 6px; align-items: baseline; max-width: 100%; min-width: 0; min-height: 32px; text-align: left; }
+nav.tabs .tl { min-width: 0; }
+nav.tabs button:hover { color: var(--text); background: color-mix(in srgb, var(--panel) 55%, transparent); }
+nav.tabs button[aria-selected="true"] { color: var(--text); font-weight: 600; background: var(--panel); border-color: var(--line-strong); }
+/* Compteur en pastille : claire sur le fond du controle, teintee sur l'onglet choisi. */
+nav.tabs .n { font: 700 12px/18px var(--display); color: var(--muted); font-variant-numeric: tabular-nums; background: color-mix(in srgb, var(--panel) 65%, var(--raised)); border-radius: 999px; padding: 0 6px; min-width: 20px; text-align: center; }
+nav.tabs button[aria-selected="true"] .n { color: var(--accent); background: var(--accent-bg); }
+/* Aucun résultat dans l'onglet : graisse normale, même couleur (pas d'opacité, qui ferait passer le texte sous 4,5:1). */
+nav.tabs .n.zero { font-weight: 400; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; }
+.search { display: flex; gap: 8px; align-items: center; flex: 1 1 260px; min-width: 0; max-width: 420px; }
+.search label { font-size: 13px; color: var(--muted); }
+.search input { flex: 1; min-width: 0; font: 14px var(--body); color: var(--text); background: var(--panel); border: 1px solid var(--field); border-radius: 6px; padding: 5px 9px; min-height: 32px; }
+.search input:focus-visible { outline-offset: 1px; }
+.btn { font: 500 13px var(--body); padding: 5px 11px; min-height: 30px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--panel); color: var(--text); cursor: pointer; }
+.btn:hover { background: var(--accent-bg); border-color: var(--mark); }
+
+/* Onglet, sections, fiches */
+.panel { display: grid; gap: 24px; }
+.tab-intro { max-width: 75ch; color: var(--muted); }
+.sec { display: grid; gap: 10px; scroll-margin-top: 16px; }
+.sec-head { display: grid; gap: 2px; border-bottom: 2px solid var(--line); padding-bottom: 6px; }
+.sec-head .how { font-size: 13px; color: var(--muted); max-width: 80ch; }
+/* Trois colonnes au plus (300 px au moins) : à 1280 px, une section de trois fiches remplit la ligne. */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(300px, calc((100% - 20px) / 3)), 1fr)); gap: 10px; align-items: start; }
+@media (max-width: 460px) { .cards { grid-template-columns: minmax(0, 1fr); } }
+.card { display: grid; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px 7px; min-width: 0; scroll-margin-top: 16px; box-shadow: 0 1px 2px rgb(23 26 46 / 6%); }
+.card.wide { grid-column: 1 / -1; }
+.card-head { display: flex; gap: 11px; align-items: center; min-width: 0; }
+.card-head img { width: 48px; height: 48px; flex: none; object-fit: contain; background: var(--raised); border-radius: 6px; }
+.pixel .card-head img { image-rendering: pixelated; image-rendering: crisp-edges; }
+.ttl { display: grid; grid-template-columns: minmax(0, 1fr); flex: 1 1 auto; gap: 0; min-width: 0; }
+.ttl .kind { font: 600 12.5px/1.3 var(--display); color: var(--muted); }
+.ttl .sub { font-size: 13px; color: var(--muted); }
+.badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.badge { font-size: 12px; font-weight: 600; padding: 0 7px; line-height: 20px; border-radius: 999px; color: var(--muted); background: var(--raised); }
+.badge.accent { color: var(--accent); background: var(--accent-bg); }
+.badge.good { color: var(--st-done); background: color-mix(in srgb, var(--st-done) 11%, var(--panel)); }
+.badge.warn { color: var(--st-new); background: color-mix(in srgb, var(--st-new) 11%, var(--panel)); }
+.badge.bad { color: var(--st-question); background: color-mix(in srgb, var(--st-question) 11%, var(--panel)); }
+dl.fields { display: grid; grid-template-columns: fit-content(45%) minmax(0, 1fr); gap: 2px 14px; margin: 0; font-size: 13.5px; }
+dl.fields dt { color: var(--muted); }
+dl.fields dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 550; overflow-wrap: anywhere; }
+.card .text { font-size: 14px; display: grid; gap: 6px; overflow-wrap: anywhere; }
+.card ul { margin: 0; padding-left: 18px; font-size: 13.5px; display: grid; gap: 2px; }
+.links { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
+.tbl { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 6px; }
+.tbl table { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; min-width: 100%; }
+.tbl th, .tbl td { padding: 4px 10px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl th { font-weight: 600; color: var(--muted); background: var(--raised); white-space: nowrap; }
+.tbl tr:last-child td { border-bottom: none; }
+.foot { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 6px; margin-top: 2px; }
+.ref { font: 11.5px var(--mono); color: var(--muted); overflow-wrap: anywhere; min-width: 0; }
+.empty { color: var(--muted); font-size: 14px; }
+.flash { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Notes datees : nouveautes, mesures, points a valider */
+.nset { display: grid; gap: 10px; }
+.nset-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.nset-head .date { font: 12px var(--mono); color: var(--muted); }
+.nset > .how { font-size: 13px; color: var(--muted); max-width: 80ch; }
+.ms { display: grid; gap: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 2px 14px 4px; }
+.ms-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding: 8px 0 6px; }
+.ms-head .key { font: 700 13px var(--display); color: var(--accent); }
+.ms-head .cnt, .ms-head code { font: 12px var(--mono); color: var(--muted); }
+.theme { font: 600 14px var(--display); color: var(--muted); padding: 10px 0 2px; }
+.theme small { font-weight: 500; letter-spacing: 0; font-size: 12px; }
+.row { display: grid; gap: 4px 14px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; scroll-margin-top: 16px; min-width: 0; }
+.row .foot { border-top: none; padding-top: 0; margin-top: 0; }
+.chg { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); }
+.chg .foot, .val .foot, .mrow .foot { grid-column: 1 / -1; }
+.chg .subj { font-weight: 600; }
+.chg small, .mrow small { display: block; font: 600 12.5px var(--display); color: var(--muted); }
+.chg .before { color: var(--muted); }
+@media (max-width: 640px) { .chg { grid-template-columns: minmax(0, 1fr); } }
+/* Vue tableau d'un onglet (etape 3.7, L2) : une ligne par element, une colonne par champ commun, tri au clic. */
+.vue-choix { display: inline-flex; gap: 0; border: 1px solid var(--line); border-radius: 6px; padding: 2px; background: var(--raised); }
+.vue-choix button { font: 500 13px var(--body); color: var(--muted); background: transparent; border: 0; border-radius: 4px; padding: 3px 10px; min-height: 28px; cursor: pointer; }
+.vue-choix button[aria-pressed="true"] { color: var(--text); background: var(--panel); box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 12%, transparent); }
+.sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.vue-barre { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 4px 0 10px; }
+.mode-tableau .sec, .mode-tableau > .empty { display: none; }
+.vt table { min-width: 100%; }
+.vt th, .vt td { vertical-align: top; }
+.vt thead th { position: sticky; top: 0; z-index: 1; }
+.vt thead button { font: inherit; font-weight: 600; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; white-space: nowrap; }
+.vt thead button::after { content: ""; display: inline-block; width: 1em; }
+.vt th[aria-sort="ascending"] button::after { content: " ↑"; }
+.vt th[aria-sort="descending"] button::after { content: " ↓"; }
+.vt tbody th { font-weight: 600; text-align: left; white-space: normal; min-width: 8rem; }
+.vt td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.vt td.fb { white-space: nowrap; }
+.vt .fb-btn { margin: 0; }
+.vt-sec { color: var(--muted); font-size: 12.5px; }
+/* Changements calcules entre deux builds (onglet « Changements », pastille sur la fiche). */
+.ttl .chg-pill { justify-self: start; font-size: 11.5px; font-weight: 600; padding: 0 7px; line-height: 18px; border-radius: 999px; color: var(--accent); background: var(--accent-bg); margin-top: 2px; }
+.ttl .chg-pill.new { color: var(--st-done); background: color-mix(in srgb, var(--st-done) 11%, var(--panel)); }
+.dif { grid-template-columns: minmax(0, 1fr); }
+.dif .subj { font-weight: 600; }
+.dif .where { font-size: 12.5px; color: var(--muted); }
+.dif dl { display: grid; grid-template-columns: minmax(6rem, max-content) minmax(0, 1fr); gap: 2px 12px; margin: 2px 0 0; font-size: 13.5px; }
+.dif dt { color: var(--muted); overflow-wrap: anywhere; }
+.dif dd { margin: 0; overflow-wrap: anywhere; }
+.dif .before { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+.dif .arrow { color: var(--muted); padding: 0 4px; }
+@media (max-width: 480px) { .dif dl { grid-template-columns: minmax(0, 1fr); } .dif dd { margin-bottom: 4px; } }
+.val { grid-template-columns: minmax(0, 1fr); }
+.val .dep { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.mrow { grid-template-columns: minmax(0, 1fr); }
+.ms > .row:first-child { border-top: none; }
+.mrow .lbl { font-weight: 600; }
+.steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.step { display: grid; background: var(--raised); border-radius: 6px; padding: 3px 8px; font-size: 12px; color: var(--muted); max-width: 100%; }
+.step b { font: 700 15px var(--display); color: var(--text); font-variant-numeric: tabular-nums; }
+.step.last { box-shadow: inset 0 0 0 1px var(--mark); background: var(--accent-bg); }
+.mrow .target { font-size: 12.5px; color: var(--muted); }
+/* Au bureau, la reference et le bouton de retour d'une ligne de note passent dans une colonne a droite (une ligne de
+   moins par note) ; en dessous de 640 px, ils restent en pied. */
+@media (min-width: 641px) {
+	.chg { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
+	.val, .mrow { grid-template-columns: minmax(0, 1fr) auto; }
+	.chg .foot, .val .foot, .mrow .foot { grid-column: -2; grid-row: 1; flex-direction: column; align-items: flex-end; justify-content: flex-start; gap: 4px; min-width: 9rem; }
+	.mrow .foot { grid-row: 1 / span 3; }
+	.mrow > :not(.foot) { grid-column: 1; }
+}
+
+/* Etape 3.9, lot 1 : statut et origine (L4), filtres (L4, L6), lien de fiche (L8), image agrandie (L10), raccourcis
+   (L12), impression (L11). */
+.badge.st { border: 1px solid var(--line-strong); background: transparent; }
+.badge.st-agent { color: var(--st-new); border-color: color-mix(in srgb, var(--st-new) 45%, var(--panel)); }
+.filtres { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 13px; color: var(--muted); }
+.filtres select { font: 13px var(--body); color: var(--text); background: var(--panel); border: 1px solid var(--field); border-radius: 6px; padding: 3px 6px; min-height: 30px; max-width: 100%; }
+.filtres label { display: inline-flex; gap: 6px; align-items: center; min-height: 30px; cursor: pointer; }
+.filtres input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.lien-btn { font: 500 12px var(--body); color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 5px; padding: 1px 6px; min-height: 24px; cursor: pointer; }
+.lien-btn:hover { color: var(--text); border-color: var(--line-strong); }
+.lien-btn.ok { color: var(--st-done); }
+.foot .ref-l { display: flex; gap: 4px; align-items: center; min-width: 0; flex-wrap: wrap; }
+button.zoom { padding: 0; border: 0; background: none; cursor: zoom-in; flex: none; border-radius: 6px; line-height: 0; }
+dialog.dlg { border: 1px solid var(--line-strong); border-radius: 10px; background: var(--panel); color: var(--text); padding: 14px; max-width: min(92vw, 900px); max-height: 92vh; }
+dialog.dlg::backdrop { background: color-mix(in srgb, #000 55%, transparent); }
+.dlg-head { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.dlg-head h2 { font-size: 15px; }
+#zoom-img { display: block; max-width: 100%; max-height: 74vh; margin: 0 auto; object-fit: contain; background: var(--raised); border-radius: 6px; }
+/* Etape 3.9, L9 : epingles posees sur l'image agrandie (coordonnees relatives), numerotees ; une image changee depuis : en pointille. */
+.zoom-cadre { position: relative; width: fit-content; max-width: 100%; margin: 0 auto; line-height: 0; }
+#zoom-pins { position: absolute; pointer-events: none; }
+#zoom-pins .epingle { pointer-events: auto; }
+.zoom-cadre.epinglable #zoom-img { cursor: crosshair; }
+.epingle { position: absolute; transform: translate(-50%, -50%); width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; background: var(--st-new); color: var(--panel); font: 700 12px var(--body); line-height: 22px; text-align: center; padding: 0; cursor: pointer; box-shadow: 0 1px 4px rgb(0 0 0 / 45%); }
+.epingle.st-question { background: var(--st-question); } .epingle.st-pris { background: var(--st-taken); } .epingle.st-fait, .epingle.st-refuse { background: var(--st-done); opacity: .75; }
+.epingle.ancienne { border-style: dashed; opacity: .6; }
+.zoom-aide { margin: 8px 0 0; font-size: 13px; color: var(--muted); line-height: 1.4; }
+.pixel #zoom-img { image-rendering: pixelated; image-rendering: crisp-edges; }
+.touches { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; margin: 0; font-size: 14px; }
+.touches dt kbd { font: 600 12px var(--mono); border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; background: var(--raised); }
+.touches dd { margin: 0; color: var(--muted); }
+#print-head { display: none; }
+/* Etape 3.9, R3 : le libelle d'un champ ouvre un retour sur ce champ (souligne au survol et au focus seulement). */
+button.fb-champ { font: inherit; color: inherit; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+button.fb-champ:hover, button.fb-champ:focus-visible { color: var(--accent); text-decoration: underline dotted; text-underline-offset: 3px; }
+@media print {
+	:root { color-scheme: light; }
+	body { background: #fff; color: #000; font-size: 11pt; }
+	.wrap { max-width: none; padding: 0; gap: 8px; }
+	nav.tabs, .toolbar, #fb-fab, #fb-panel, #fb-off, .vue-barre, .fb-slot, .lien-btn, dialog, .wdd-bandeau { display: none !important; }
+	#print-head { display: block; position: fixed; top: 0; left: 0; right: 0; font-size: 8.5pt; color: #444; border-bottom: 1px solid #999; padding-bottom: 2px; background: #fff; }
+	header.top { margin-top: 18pt; }
+	.panel[hidden] { display: grid !important; }
+	.panel { break-before: page; gap: 10px; }
+	.panel::before { content: attr(data-titre); font: 650 15pt var(--body); }
+	.mode-tableau .sec { display: grid !important; }
+	.vue-tableau { display: none !important; }
+	.card, .row, .ms { break-inside: avoid; border-color: #999; background: #fff; }
+	.cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	a { color: #000; }
+}
+
+/* Styles du module retours (site/retours/retours.css), injectes par build.js. */
+/*__RETOURS_CSS__*/
+</style>
+
+<div id="print-head"></div>
+<div class="wrap" id="wrap">
+	<header class="top">
+		<span class="eyebrow" id="eyebrow"></span>
+		<h1 id="h1"></h1>
+		<p class="intro" id="intro"></p>
+		<div class="meta-line" id="meta-line"></div>
+	</header>
+	<nav class="tabs" role="tablist" id="tabs"></nav>
+	<div class="toolbar">
+		<div class="search" role="search">
+			<label for="q" id="q-label"></label>
+			<input id="q" type="search" autocomplete="off">
+		</div>
+		<div class="filtres" id="filtres" role="group" hidden>
+			<select id="f-statut" hidden></select>
+			<label id="f-ouverts-l" hidden><input type="checkbox" id="f-ouverts"><span id="f-ouverts-t"></span></label>
+		</div>
+		<div class="fb-top" id="fb-top" hidden>
+			<button type="button" class="btn" id="fb-general"></button>
+			<button type="button" class="btn" id="fb-all-top"></button>
+		</div>
+	</div>
+	<p class="note-off" id="fb-off" hidden></p>
+	<main id="panels"></main>
+</div>
+
+<button type="button" class="fb-fab" id="fb-fab" hidden><span id="fb-fab-l"></span><span class="n" id="fb-fab-n" hidden></span></button>
+<aside class="fb-panel" id="fb-panel" aria-labelledby="fb-title" hidden>
+	<div class="fb-head">
+		<span class="eyebrow" id="fb-eyebrow"></span>
+		<button type="button" class="btn small" id="fb-close"></button>
+		<h3 id="fb-title"></h3>
+	</div>
+	<div class="fb-body" id="fb-body"></div>
+</aside>
+<dialog class="dlg" id="zoom-dlg" aria-labelledby="zoom-t">
+	<div class="dlg-head"><h2 id="zoom-t"></h2><button type="button" class="btn" id="zoom-close"></button></div>
+	<div class="zoom-cadre" id="zoom-cadre"><img id="zoom-img" alt=""><div id="zoom-pins"></div></div>
+	<p class="zoom-aide" id="zoom-aide" hidden></p>
+</dialog>
+<dialog class="dlg" id="aide-dlg" aria-labelledby="aide-t">
+	<div class="dlg-head"><h2 id="aide-t"></h2><button type="button" class="btn" id="aide-close"></button></div>
+	<dl class="touches" id="aide-l"></dl>
+</dialog>
+<p class="sr" id="annonce" aria-live="polite"></p>
+
+<script>
+"use strict";
+// Module retours (site/retours/retours.js), injecte par build.js : definit window.Retours.
+/*__RETOURS__*/
+</script>
+<script>
+"use strict";
+// Adaptateur de stockage des retours (site/retours/stockage-<nom>.js, option --stockage de build.js) : definit
+// window.RetoursStockage.
+/*__STOCKAGE__*/
+</script>
+<script>
+"use strict";
+// Affichage. Donnees injectees par build.js (data.json du projet + notes datees fusionnees sous « notes.sets »).
+const DATA = /*__DATA__*/null;
+
+// Textes d'interface. Pour un projet dans une autre langue : modifier cet objet dans la copie du projet,
+// ou fournir « ui » dans data.json (memes cles ; fusion sur un niveau). {n}, {q}... sont remplaces.
+// Les libelles des retours (« ui.fb ») ont leurs valeurs par defaut dans le module (Retours.textes).
+const UI = {
+	lang: "fr", locale: "fr-FR",
+	empty: "Page vide : construis-la avec build.js (node build.js data.json page.html).",
+	generated: "Données du {d}",
+	search: "Chercher", searchPh: "nom, texte, valeur…", searchNone: "Aucun résultat pour « {q} » dans cet onglet.",
+	emptyTab: "Rien dans cet onglet pour l'instant.",
+	tabsAria: "Onglets", yes: "Oui", no: "Non",
+	kinds: { nouveaute: "Nouveauté", mesure: "Mesure", validation: "À valider", general: "Remarque générale" },
+	// Vue tableau d'un onglet (etape 3.7, L2).
+	view: { aria: "Affichage de l'onglet", cards: "Fiches", table: "Tableau", name: "Nom", section: "Section", fb: "Retours", caption: "Éléments de l'onglet « {t} », une colonne par champ commun ; trier : cliquer un en-tête." },
+	// Changements calcules par build.js (--precedent) : ce qui a bouge depuis le build precedent.
+	diff: {
+		tab: "Changements", how: "Calculé à partir des données du projet : ce qui a bougé depuis le build précédent{d}. Les Nouveautés disent pourquoi.",
+		since: " (données du {d})", modified: "Modifiés", added: "Ajoutés", removed: "Retirés", more: "{n} autres changements non listés.",
+		pillMod: "modifié", pillNew: "nouveau", none: "vide", gone: "retiré de cette version",
+	},
+	// Etape 3.9, lot 1.
+	statut: { idee: "idée", specifie: "spécifié", "en-cours": "en cours", implemente: "implémenté", ecart: "écart" },
+	origine: { equipe: "équipe", deduit: "déduit du projet", atelier: "atelier", agent: "proposé par l'agent" },
+	filter: { aria: "Filtres", statut: "Statut ou origine", all: "Tout statut", agent: "Proposé par l'agent", open: "Avec retours ouverts", none: "Aucune fiche ne correspond aux filtres dans cet onglet." },
+	copy: { btn: "Lien", aria: "Copier le lien de « {n} »", done: "Lien copié", fail: "Copie impossible ; le lien : {u}" },
+	zoom: { aria: "Agrandir l'image de « {n} »", close: "Fermer", aide: "Clique sur l'image pour poser un retour à cet endroit.", pin: "Retour {n} ({s}) : {t}", ancienne: " (posé sur une image remplacée depuis)", aucune: "{n} retour(s) épinglé(s) ; clique sur l'image pour en poser un autre." },
+	keys: { title: "Raccourcis clavier", close: "Fermer", list: [["/", "chercher"], ["j", "fiche suivante"], ["k", "fiche précédente"], ["r", "écrire un retour sur la fiche"], ["?", "cette aide"], ["Échap", "fermer"]] },
+	print: { head: "{t} · build {b} · données du {d} · imprimé le {p}", nobuild: "{t} · données du {d} · imprimé le {p}" },
+	champ: "Écrire un retour sur « {f} »",
+	versions: "Versions",
+	notes: {
+		changes: "Nouveautés", measures: "Mesures", validations: "À valider",
+		changesHow: "Ce qui a changé, avant → après, jalon par jalon ; la série la plus récente d'abord.",
+		measuresHow: "Mesures datées, la série la plus récente d'abord ; la dernière valeur d'une suite est encadrée.",
+		validationsHow: "Points laissés à ta décision : un bouton par point pour répondre Validé, À revoir ou Question.",
+		before: "avant", after: "après", other: "Autres", point: "point", points: "points",
+		answered: "{a} sur {n} points ont une réponse.",
+	},
+};
+if (DATA && DATA.ui && typeof DATA.ui === "object") for (const [k, v] of Object.entries(DATA.ui)) UI[k] = v && typeof v === "object" && !Array.isArray(v) && UI[k] && typeof UI[k] === "object" ? { ...UI[k], ...v } : v;
+document.documentElement.lang = UI.lang;
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = (s, v) => String(s).replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m);
+// Meme fonction que build.js : une ancre d'URL n'a que des lettres ASCII, des chiffres et des tirets simples.
+const slug = s => String(s).normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "x";
+const norm = s => String(s ?? "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+const fmtDate = iso => { try { const d = new Date(iso); return isNaN(d) ? String(iso || "") : d.toLocaleString(UI.locale, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (e) { return String(iso || ""); } };
+const KINDS = { ...UI.kinds, ...((DATA && DATA.kinds) || {}) };
+const kindLabel = k => KINDS[k] || k;
+const itemAnchor = (tab, id) => `${tab}--${slug(id)}`;
+const secAnchor = (tab, id) => `${tab}---${slug(id)}`;
+// Marquage des elements commentables : attributs et emplacement du bouton fournis par le module retours.
+const RETOURS = window.Retours || null;
+// anciennes : refs d'avant un renommage (data.json « anciennes_refs ») : leurs retours s'affichent sur la fiche.
+const fbAttr = (kind, id, name, anciennes) => RETOURS ? RETOURS.marque(kind, id, name, anciennes) : "";
+// Pied d'un element : sa ref, le bouton « copier le lien » de son ancre (L8) et l'emplacement du bouton de retour.
+const FOOT = (ref, ancre, nom) => `<div class="foot"><span class="ref-l"><code class="ref">${esc(ref)}</code>${ancre ? `<button type="button" class="lien-btn" data-lien="${esc(ancre)}" aria-label="${esc(fmt(UI.copy.aria, { n: nom || ref }))}">${esc(UI.copy.btn)}</button>` : ""}</span>${RETOURS ? RETOURS.emplacement() : ""}</div>`;
+// Statut et origine d'un element (L4) : badges et attributs du filtre.
+const STATUTS = Object.keys(UI.statut), ORIGINES = Object.keys(UI.origine);
+const etatBadges = it => (STATUTS.includes(it.statut) ? `<span class="badge st">${esc(UI.statut[it.statut])}</span>` : "") +
+	(ORIGINES.includes(it.origine) ? `<span class="badge st${it.origine === "agent" ? " st-agent" : ""}">${esc(UI.origine[it.origine])}</span>` : "");
+const filtreAttr = it => ` data-filtre="1"${STATUTS.includes(it.statut) ? ` data-statut="${esc(it.statut)}"` : ""}${ORIGINES.includes(it.origine) ? ` data-origine="${esc(it.origine)}"` : ""}`;
+// Images a agrandir (L10) : ancre de la fiche -> image (image_grande, sinon l'image de la fiche).
+const ZOOM = new Map();
+
+const wrap = document.getElementById("wrap");
+const panels = document.getElementById("panels");
+const TABS = [];
+
+function textBlock(t) { return `<div class="text">${String(t).split(/\n{2,}/).map(p => `<p>${esc(p).replace(/\n/g, "<br>")}</p>`).join("")}</div>`; }
+function linkHtml([label, href]) {
+	const h = String(href || "");
+	if (h.startsWith("#")) return `<a href="${esc(h)}" data-nav="${esc(h.slice(1))}">${esc(label)}</a>`;
+	if (/^https:\/\//.test(h)) return `<a href="${esc(h)}" target="_blank" rel="noopener">${esc(label)}</a>`;
+	return `<span>${esc(label)}</span>`;
+}
+// Nombres au format de la langue de la page (virgule decimale en francais) ; groupes de milliers a partir de
+// 10 000 seulement, pour qu'une annee reste « 2026 ». Une valeur a garder telle quelle s'ecrit en texte.
+const NF = (() => { try { return new Intl.NumberFormat(UI.locale, { maximumFractionDigits: 6, useGrouping: "min2" }); } catch (e) { try { return new Intl.NumberFormat(UI.locale, { maximumFractionDigits: 6, useGrouping: false }); } catch (e2) { return null; } } })();
+const cell = x => typeof x === "number" ? (NF ? NF.format(x) : String(x)) : typeof x === "boolean" ? (x ? UI.yes : UI.no) : String(x ?? "");
+const val = v => Array.isArray(v) ? v.map(cell).join(", ") : cell(v);
+function tableHtml(t) {
+	const head = Array.isArray(t.head) ? t.head : [];
+	return `<div class="tbl"><table>${head.length ? `<thead><tr>${head.map(h => `<th scope="col">${esc(cell(h))}</th>`).join("")}</tr></thead>` : ""}<tbody>${(t.rows || []).map(r => `<tr>${r.map(c => `<td>${esc(cell(c))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+// Changements depuis le build precedent (build.js --precedent ; absents au premier build ou sans le serveur).
+const DIFF = DATA && DATA.changements && typeof DATA.changements === "object" ? DATA.changements : null;
+const diffKey = (tab, id) => `${tab}\u0000${id}`;
+const DIFF_MOD = new Set(DIFF ? (DIFF.modifies || []).map(x => diffKey(x.tab, x.id)) : []);
+const DIFF_NEW = new Set(DIFF ? (DIFF.ajoutes || []).map(x => diffKey(x.tab, x.id)) : []);
+const diffCount = DIFF ? (DIFF.modifies || []).length + (DIFF.ajoutes || []).length + (DIFF.retires || []).length : 0;
+function card(tab, it) {
+	const pill = DIFF_NEW.has(diffKey(tab.id, it.id)) ? `<span class="chg-pill new">${esc(UI.diff.pillNew)}</span>` : DIFF_MOD.has(diffKey(tab.id, it.id)) ? `<span class="chg-pill">${esc(UI.diff.pillMod)}</span>` : "";
+	const badges = (it.badges || []).map(b => typeof b === "string" ? { text: b } : b);
+	const fields = it.fields || [];
+	const tbl = it.table && Array.isArray(it.table.rows) ? it.table : null;
+	const etat = etatBadges(it);
+	const search = norm([it.name, it.subtitle, kindLabel(it.kind), it.id, ...badges.map(b => b.text), UI.statut[it.statut], UI.origine[it.origine], ...fields.flat().map(val), it.text, ...(it.list || []), ...(tbl ? [...(tbl.head || []), ...tbl.rows.flat()].map(cell) : [])].join(" "));
+	const ancre = itemAnchor(tab.id, it.id);
+	if (it.image) ZOOM.set(ancre, { src: it.image_grande || it.image, nom: it.name, kind: it.kind, id: String(it.id), anciennes: it.anciennes_refs || [] });
+	const img = it.image ? `<button type="button" class="zoom" data-zoom="${esc(ancre)}" aria-label="${esc(fmt(UI.zoom.aria, { n: it.name }))}"><img src="${esc(it.image)}" alt="" loading="lazy"></button>` : "";
+	return `<article class="card${it.wide ? " wide" : ""}" id="${esc(ancre)}" data-search="${esc(search)}"${filtreAttr(it)}${fbAttr(it.kind, it.id, it.name, it.anciennes_refs)}>
+		<div class="card-head">${img}<div class="ttl"><span class="kind">${esc(kindLabel(it.kind))}</span><h3>${esc(it.name)}</h3>${it.subtitle ? `<span class="sub">${esc(it.subtitle)}</span>` : ""}${pill}</div></div>
+		${badges.length || etat ? `<div class="badges">${etat}${badges.map(b => `<span class="badge ${esc(b.tone || "")}">${esc(b.text)}</span>`).join("")}</div>` : ""}
+		${fields.length ? `<dl class="fields">${fields.map(([l, v]) => `<dt>${RETOURS ? `<button type="button" class="fb-champ" data-fb-field="${esc(l)}" data-fb-valeur="${esc(val(v))}" title="${esc(fmt(UI.champ, { f: l }))}">${esc(l)}</button>` : esc(l)}</dt><dd>${esc(val(v))}</dd>`).join("")}</dl>` : ""}
+		${it.text ? textBlock(it.text) : ""}
+		${tbl ? tableHtml(tbl) : ""}
+		${it.list && it.list.length ? `<ul>${it.list.map(x => `<li>${esc(cell(x))}</li>`).join("")}</ul>` : ""}
+		${it.links && it.links.length ? `<div class="links">${it.links.map(linkHtml).join("")}</div>` : ""}
+		${FOOT(it.id, ancre, it.name)}
+	</article>`;
+}
+// Vue tableau (etape 3.7, L2) : colonnes declarees par l'exporteur (tab.columns), sinon les champs presents dans au
+// moins la moitie des elements (2 au moins), 8 au plus. Proposee a partir de 3 elements et d'une colonne. Construite
+// au premier passage en mode tableau seulement (la page reste celle d'avant tant qu'on ne s'en sert pas).
+const MAX_COLONNES = 8;
+const elementsDe = tab => (tab.sections || []).flatMap(s => (s.items || []).map(it => ({ it, sec: s })));
+function colonnesDe(tab) {
+	if (Array.isArray(tab.columns) && tab.columns.length) return tab.columns.map(String);
+	const l = elementsDe(tab), n = new Map();
+	for (const { it } of l) for (const f of (it.fields || [])) n.set(f[0], (n.get(f[0]) || 0) + 1);
+	return [...n].filter(([, c]) => c >= 2 && c * 2 >= l.length).map(([k]) => k).slice(0, MAX_COLONNES);
+}
+const peutTableau = tab => elementsDe(tab).length >= 3 && colonnesDe(tab).length >= 1;
+function tableHtmlVue(tab) {
+	const cols = colonnesDe(tab), l = elementsDe(tab), secs = (tab.sections || []).length > 1;
+	const cellule = v => v === undefined ? `<td></td>` : `<td${typeof v === "number" ? ` class="num" data-n="${v}"` : ""} data-v="${esc(val(v))}">${esc(val(v))}</td>`;
+	const lignes = l.map(({ it, sec }) => {
+		const champs = new Map((it.fields || []).map(f => [f[0], f[1]]));
+		const a = itemAnchor(tab.id, it.id);
+		const search = norm([it.name, it.id, kindLabel(it.kind), sec.title, ...cols.map(c => champs.has(c) ? val(champs.get(c)) : "")].join(" "));
+		return `<tr class="vt-ligne" data-search="${esc(search)}" data-fb-anchor="${esc(a)}"${filtreAttr(it)}${fbAttr(it.kind, it.id, it.name, it.anciennes_refs)}><th scope="row" data-v="${esc(it.name)}"><a href="#${esc(a)}" data-nav="${esc(a)}">${esc(it.name)}</a></th>${secs ? `<td class="vt-sec" data-v="${esc(sec.title)}">${esc(sec.title)}</td>` : ""}${cols.map(c => cellule(champs.get(c))).join("")}<td class="fb">${RETOURS ? RETOURS.emplacement() : ""}</td></tr>`;
+	}).join("");
+	const tete = [UI.view.name, ...(secs ? [UI.view.section] : []), ...cols];
+	return `<div class="tbl vt"><table><caption class="sr">${esc(fmt(UI.view.caption, { t: tab.label }))}</caption><thead><tr>${tete.map((t, i) => `<th scope="col" aria-sort="none"><button type="button" data-tri="${i}">${esc(t)}</button></th>`).join("")}<th scope="col">${esc(UI.view.fb)}</th></tr></thead><tbody>${lignes}</tbody></table></div>`;
+}
+function dataTab(tab) {
+	const secs = tab.sections || [];
+	const choix = peutTableau(tab) ? `<div class="vue-barre"><div class="vue-choix" role="group" aria-label="${esc(UI.view.aria)}"><button type="button" data-vue="fiches" aria-pressed="true">${esc(UI.view.cards)}</button><button type="button" data-vue="tableau" aria-pressed="false">${esc(UI.view.table)}</button></div></div><div class="vue-tableau" hidden></div>` : "";
+	return (tab.intro ? `<p class="tab-intro">${esc(tab.intro)}</p>` : "") + choix + (secs.length ? secs.map(s => `<section class="sec" id="${esc(secAnchor(tab.id, s.id))}">
+		<div class="sec-head"><h2>${esc(s.title)}</h2>${s.intro ? `<p class="how">${esc(s.intro)}</p>` : ""}</div>
+		<div class="cards">${(s.items || []).map(it => card(tab, it)).join("")}</div>
+	</section>`).join("") : `<p class="empty">${esc(UI.emptyTab)}</p>`);
+}
+
+// Notes datees (fusionnees par build.js, la serie la plus recente d'abord). Chaque ligne porte un bouton de retour
+// de sorte « nouveaute », « mesure » ou « validation », dont la ref est l'identifiant de la ligne.
+const SETS = DATA && DATA.notes && Array.isArray(DATA.notes.sets) ? DATA.notes.sets : [];
+const noteCount = key => SETS.reduce((n, s) => n + (s[key] || []).length, 0);
+const setHead = (s, fallback) => `<div class="nset-head"><h2>${esc(s.label || s.title || fallback)}</h2>${s.date ? `<span class="date">${esc(s.date)}</span>` : ""}${s.commit ? `<code class="ref">${esc(s.commit)}</code>` : ""}</div>`;
+function byMilestone(s, list, row, count) {
+	const ms = Object.keys(s.milestones || {});
+	const loose = list.filter(x => !ms.includes(x.milestone));
+	const groups = ms.filter(m => list.some(x => x.milestone === m)).map(m => [m, list.filter(x => x.milestone === m)]);
+	if (loose.length) groups.push(["", loose]);
+	return groups.map(([m, items]) => {
+		const themes = [...new Set(items.map(x => x.theme || ""))];
+		const body = themes.length > 1 || themes[0] ? themes.map(t => { const ti = items.filter(x => (x.theme || "") === t); return `<div class="theme">${esc(t || UI.notes.other)} <small>${ti.length}</small></div>${ti.map(row).join("")}`; }).join("") : items.map(row).join("");
+		const commit = (s.commits || {})[m];
+		return `<div class="ms"><div class="ms-head">${m ? `<span class="key">${esc(m)}</span><h3>${esc((s.milestones || {})[m] || m)}</h3>` : `<h3>${esc(UI.notes.other)}</h3>`}${commit ? `<code>${esc(commit)}</code>` : ""}${count ? `<span class="cnt">${items.length} ${esc(items.length > 1 ? UI.notes.points : UI.notes.point)}</span>` : ""}</div>${body}</div>`;
+	}).join("");
+}
+const chgRow = c => `<div class="row chg" id="nouveautes--${esc(slug(c.id))}" data-search="${esc(norm([c.subject, c.before, c.after, c.id].join(" ")))}"${fbAttr("nouveaute", c.id, `${c.milestone ? c.milestone + " · " : ""}${c.subject}`)}>
+	<span class="subj">${esc(c.subject)}</span><span class="before"><small>${esc(UI.notes.before)}</small>${esc(c.before ?? "—")}</span><span class="after"><small>${esc(UI.notes.after)}</small>${esc(c.after ?? "—")}</span>${FOOT(c.id, "nouveautes--" + slug(c.id), c.subject)}</div>`;
+const mRow = m => `<div class="row mrow" id="mesures--${esc(slug(m.id))}" data-search="${esc(norm([m.label, m.target, m.id, ...(m.steps || []).map(s => s.when + " " + s.value)].join(" ")))}"${fbAttr("mesure", m.id, m.label)}>
+	<span class="lbl">${esc(m.label)}</span><div class="steps">${(m.steps || []).map((s, i, a) => `<span class="step${!m.list && i === a.length - 1 ? " last" : ""}">${esc(s.when)}<b>${esc(s.value)}</b></span>`).join("")}</div>${m.target ? `<span class="target">${esc(m.target)}</span>` : ""}${FOOT(m.id, "mesures--" + slug(m.id), m.label)}</div>`;
+const shortName = (t, n) => t.length <= n ? t : t.slice(0, Math.max(t.lastIndexOf(" ", n), 20)) + " …";
+const vRow = v => `<div class="row val" id="a-valider--${esc(slug(v.id))}" data-search="${esc(norm([v.text, v.theme, v.id, v.depends].join(" ")))}"${fbAttr("validation", v.id, `${v.milestone ? v.milestone + " · " : ""}${shortName(String(v.text), 90)}`)}>
+	<span>${esc(v.text)}${v.depends ? `<small class="dep">${esc(v.depends)}</small>` : ""}</span>${FOOT(v.id, "a-valider--" + slug(v.id), shortName(String(v.text), 60))}</div>`;
+function notesTab(key, how, render) {
+	const sets = SETS.filter(s => (s[key] || []).length);
+	return `<p class="tab-intro">${esc(how)}${key === "validations" ? ` <span id="val-progress"></span>` : ""}</p>` + sets.map(s => `<section class="nset">${setHead(s, UI.notes[key])}${s[key + "_note"] || (key === "changes" && s.intro) ? `<p class="how">${esc(s[key + "_note"] || s.intro)}</p>` : ""}${render(s, s[key])}</section>`).join("");
+}
+
+// Onglet « Changements » : modifies (avant -> apres), ajoutes, retires ; chaque ligne mene a la fiche, sauf un retrait.
+function diffTab() {
+	const where = x => `${x.onglet || x.tab} · ${kindLabel(x.kind)}`;
+	const name = (x, lien) => lien ? `<a class="subj" href="#${esc(itemAnchor(x.tab, x.id))}" data-nav="${esc(itemAnchor(x.tab, x.id))}">${esc(x.name)}</a>` : `<span class="subj">${esc(x.name)}</span>`;
+	const vide = v => v === "" ? `<i>${esc(UI.diff.none)}</i>` : esc(v);
+	const row = (x, lien, corps) => `<div class="row dif" data-search="${esc(norm([x.name, x.id, x.onglet, kindLabel(x.kind), ...(x.champs || []).flat()].join(" ")))}">${name(x, lien)}<span class="where">${esc(where(x))}</span>${corps || ""}</div>`;
+	const champs = x => `<dl>${(x.champs || []).map(([l, a, b]) => `<dt>${esc(l)}</dt><dd><span class="before">${vide(a)}</span><span class="arrow" aria-hidden="true">→</span><span class="after">${vide(b)}</span></dd>`).join("")}</dl>`;
+	const group = (titre, list, f) => list.length ? `<section class="sec"><div class="sec-head"><h2>${esc(titre)} <small class="muted">${list.length}</small></h2></div><div class="ms">${list.map(f).join("")}</div></section>` : "";
+	const since = DIFF.depuis ? fmt(UI.diff.since, { d: fmtDate(DIFF.depuis) }) : "";
+	return `<p class="tab-intro">${esc(fmt(UI.diff.how, { d: since }))}</p>` +
+		group(UI.diff.modified, DIFF.modifies || [], x => row(x, true, champs(x))) +
+		group(UI.diff.added, DIFF.ajoutes || [], x => row(x, true)) +
+		group(UI.diff.removed, DIFF.retires || [], x => row(x, false, `<span class="where">${esc(UI.diff.gone)}</span>`)) +
+		(DIFF.coupes ? `<p class="empty">${esc(fmt(UI.diff.more, { n: DIFF.coupes }))}</p>` : "");
+}
+
+// Construction : onglets du projet puis, s'il y a des notes, Nouveautes / Mesures / A valider.
+if (!DATA) {
+	panels.innerHTML = `<p class="empty">${esc(UI.empty)}</p>`;
+} else {
+	document.getElementById("h1").textContent = DATA.title || "";
+	document.getElementById("eyebrow").textContent = DATA.subtitle || "";
+	document.getElementById("intro").textContent = DATA.intro || "";
+	if (DATA.pixelArt) wrap.classList.add("pixel");
+	for (const t of DATA.tabs || []) TABS.push({ id: t.id, label: t.label, html: dataTab(t) });
+	if (diffCount) TABS.push({ id: "changements", label: UI.diff.tab, html: diffTab(), count: diffCount });
+	if (noteCount("changes")) TABS.push({ id: "nouveautes", label: UI.notes.changes, html: notesTab("changes", UI.notes.changesHow, (s, l) => byMilestone(s, l, chgRow, false)), note: "changes" });
+	if (noteCount("measures")) TABS.push({ id: "mesures", label: UI.notes.measures, html: notesTab("measures", UI.notes.measuresHow, (s, l) => `<div class="ms">${l.map(mRow).join("")}</div>`), note: "measures" });
+	if (noteCount("validations")) TABS.push({ id: "a-valider", label: UI.notes.validations, html: notesTab("validations", UI.notes.validationsHow, (s, l) => byMilestone(s, l, vRow, true)), note: "validations" });
+	document.getElementById("tabs").setAttribute("aria-label", UI.tabsAria);
+	document.getElementById("tabs").innerHTML = TABS.map(t => `<button type="button" role="tab" id="t-${esc(t.id)}" data-tab-btn="${esc(t.id)}" aria-controls="tab-${esc(t.id)}" aria-selected="false" tabindex="-1"><span class="tl">${esc(t.label)}</span><span class="n" hidden></span></button>`).join("");
+	panels.innerHTML = TABS.map(t => `<section class="panel" role="tabpanel" id="tab-${esc(t.id)}" data-tab="${esc(t.id)}" data-titre="${esc(t.label)}" aria-labelledby="t-${esc(t.id)}" hidden>${t.html}</section>`).join("");
+	const meta = [];
+	if (DATA.generated) meta.push(`<span>${esc(fmt(UI.generated, { d: fmtDate(DATA.generated) }))}</span>`);
+	for (const t of TABS.filter(x => x.count)) meta.push(`<a href="#${t.id}" data-nav="${t.id}">${esc(t.label)} · <b>${t.count}</b></a>`);
+	for (const t of TABS.filter(x => x.note)) meta.push(`<a href="#${t.id}" data-nav="${t.id}">${esc(t.label)} · <b>${noteCount(t.note)}</b></a>`);
+	// Etape 3.9, L3 : versions gardees, sur une page servie par le serveur (balise wdd-build) seulement.
+	if (document.querySelector('meta[name="wdd-build"]') && !document.querySelector('meta[name="wdd-sans-versions"]') && /^\/p\/[^/]+\//.test(location.pathname)) meta.push(`<a href="${esc(location.pathname.match(/^\/p\/[^/]+\//)[0] + "b/")}" id="lien-versions">${esc(UI.versions)}</a>`);
+	document.getElementById("meta-line").innerHTML = meta.join("");
+}
+document.getElementById("q-label").textContent = UI.search;
+document.getElementById("q").placeholder = UI.searchPh;
+
+// Onglets, ancres d'URL (#onglet, #onglet--element, #onglet---section) et recherche.
+let curTab = "";
+function openTab(id) {
+	if (!TABS.some(t => t.id === id)) id = TABS.length ? TABS[0].id : "";
+	curTab = id;
+	for (const t of TABS) { document.getElementById("tab-" + t.id).hidden = t.id !== id; const b = document.getElementById("t-" + t.id); b.setAttribute("aria-selected", String(t.id === id)); b.tabIndex = t.id === id ? 0 : -1; }
+	applySearch();
+}
+// Bascule Fiches / Tableau d'un onglet ; le choix est retenu par le navigateur (commodite : s'il est perdu, Fiches).
+const cleVue = id => "wdd-vue:" + location.pathname + ":" + id;
+function setVue(panel, mode, retenir) {
+	const tab = (DATA.tabs || []).find(t => t.id === panel.dataset.tab);
+	const box = panel.querySelector(".vue-tableau");
+	if (!tab || !box) return;
+	const tableau = mode === "tableau";
+	if (tableau && !box.firstChild) { box.innerHTML = tableHtmlVue(tab); if (RETOURS && RETOURS.decorer) RETOURS.decorer(); }
+	box.hidden = !tableau;
+	panel.classList.toggle("mode-tableau", tableau);
+	panel.querySelectorAll(".vue-choix [data-vue]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.vue === mode)));
+	if (retenir) { try { localStorage.setItem(cleVue(tab.id), mode); } catch (e) { } }
+	applySearch();
+}
+function trier(th) {
+	const table = th.closest("table"), i = [...th.parentNode.children].indexOf(th);
+	const sens = th.getAttribute("aria-sort") === "ascending" ? "descending" : "ascending";
+	th.parentNode.querySelectorAll("th").forEach(x => { if (x.hasAttribute("aria-sort")) x.setAttribute("aria-sort", "none"); });
+	th.setAttribute("aria-sort", sens);
+	const cle = tr => { const c = tr.children[i]; return c ? (c.dataset.n !== undefined ? Number(c.dataset.n) : (c.dataset.v || "")) : ""; };
+	const coll = (() => { try { return new Intl.Collator(UI.locale, { numeric: true, sensitivity: "base" }); } catch (e) { return null; } })();
+	const rows = [...table.tBodies[0].rows];
+	rows.sort((a, b) => {
+		const x = cle(a), y = cle(b);
+		// Cases vides toujours en dernier, quel que soit le sens.
+		if (x === "" && y !== "") return 1; if (y === "" && x !== "") return -1;
+		const r = typeof x === "number" && typeof y === "number" ? x - y : coll ? coll.compare(String(x), String(y)) : String(x).localeCompare(String(y));
+		return sens === "ascending" ? r : -r;
+	});
+	table.tBodies[0].append(...rows);
+}
+wrap.addEventListener("click", e => {
+	const v = e.target.closest("[data-vue]");
+	if (v) { setVue(v.closest(".panel"), v.dataset.vue, true); return; }
+	const t = e.target.closest(".vt thead [data-tri]");
+	if (t) trier(t.closest("th"));
+});
+function setHash(h) { try { history.replaceState(null, "", "#" + h); } catch (e) { } }
+function flash(el) {
+	if (!el) return;
+	el.scrollIntoView({ block: "center" });
+	el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1600);
+}
+function route(h) {
+	h = decodeURIComponent(h || "");
+	if (TABS.some(t => t.id === h)) { openTab(h); window.scrollTo(0, 0); return; }
+	const el = h && document.getElementById(h);
+	const panel = el && el.closest("[data-tab]");
+	// Une fiche visee depuis le mode tableau : l'onglet repasse en fiches pour la montrer.
+	if (panel && panel.classList.contains("mode-tableau") && el.classList.contains("card")) setVue(panel, "fiches", true);
+	if (panel) { openTab(panel.dataset.tab); requestAnimationFrame(() => flash(el)); return; }
+	openTab(TABS.length ? TABS[0].id : "");
+}
+document.getElementById("tabs").addEventListener("click", e => { const b = e.target.closest("[data-tab-btn]"); if (!b) return; openTab(b.dataset.tabBtn); setHash(b.dataset.tabBtn); });
+// Motif ARIA des onglets : un seul onglet dans l'ordre de tabulation (le choisi) ; flèches gauche et droite, Début et Fin
+// passent d'un onglet à l'autre et l'ouvrent.
+document.getElementById("tabs").addEventListener("keydown", e => {
+	const b = e.target.closest("[data-tab-btn]"); if (!b) return;
+	const l = [...document.querySelectorAll("#tabs [data-tab-btn]")], i = l.indexOf(b);
+	const j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: l.length - 1 }[e.key];
+	if (j === undefined || !l.length) return;
+	e.preventDefault();
+	const c = l[(j + l.length) % l.length];
+	openTab(c.dataset.tabBtn); setHash(c.dataset.tabBtn); c.focus();
+});
+wrap.addEventListener("click", e => { const a = e.target.closest("a[data-nav]"); if (!a) return; e.preventDefault(); setHash(a.dataset.nav); route(a.dataset.nav); });
+window.addEventListener("hashchange", () => route(location.hash.slice(1)));
+
+const qInput = document.getElementById("q");
+// Filtres (L4, L6) : statut ou origine choisi, « avec retours ouverts ». Ils ne portent que sur les fiches et les lignes
+// du tableau (data-filtre) ; les notes datees ne sont pas filtrees.
+const fStatut = document.getElementById("f-statut"), fOuverts = document.getElementById("f-ouverts");
+const filtreActif = () => !!fStatut.value || fOuverts.checked;
+function passeFiltre(r) {
+	if (!r.dataset.filtre) return true;
+	const v = fStatut.value;
+	if (v.startsWith("s:") && r.dataset.statut !== v.slice(2)) return false;
+	if (v.startsWith("o:") && r.dataset.origine !== v.slice(2)) return false;
+	if (fOuverts.checked && !(Number(r.dataset.fbOuverts) > 0)) return false;
+	return true;
+}
+function applySearch() {
+	const q = norm(qInput.value.trim()), f = filtreActif();
+	for (const t of TABS) {
+		const panel = document.getElementById("tab-" + t.id);
+		// Mode tableau : la recherche filtre les lignes ; sinon les fiches (les lignes, cachees, ne comptent pas).
+		const rows = panel.querySelectorAll(panel.classList.contains("mode-tableau") ? ".vt-ligne" : "[data-search]:not(.vt-ligne)");
+		let n = 0;
+		rows.forEach(r => { const hit = (!q || q.split(/\s+/).every(w => r.dataset.search.includes(w))) && (!f || passeFiltre(r)); if (hit) n++; if (t.id === curTab || (!q && !f)) r.hidden = !hit; });
+		panel.querySelectorAll(".sec, .ms, .nset").forEach(s => { s.hidden = (!!q || f) && t.id === curTab && !s.querySelector("[data-search]:not([hidden])"); });
+		const badge = document.querySelector(`#t-${CSS.escape(t.id)} .n`);
+		badge.hidden = !q && !f; badge.textContent = String(n); badge.classList.toggle("zero", !n);
+		let none = panel.querySelector(":scope > .search-none");
+		if (t.id === curTab && (q || f) && !n) { if (!none) { none = document.createElement("p"); none.className = "empty search-none"; panel.appendChild(none); } none.textContent = q ? fmt(UI.searchNone, { q: qInput.value.trim() }) : UI.filter.none; }
+		else if (none) none.remove();
+	}
+}
+qInput.addEventListener("input", applySearch);
+// Choix du filtre statut / origine : seulement les valeurs presentes dans les donnees.
+(() => {
+	const items = DATA ? (DATA.tabs || []).flatMap(t => (t.sections || []).flatMap(s => s.items || [])) : [];
+	const st = STATUTS.filter(s => items.some(it => it.statut === s)), ag = items.some(it => it.origine === "agent");
+	const autres = ORIGINES.filter(o => o !== "agent" && items.some(it => it.origine === o));
+	document.getElementById("filtres").setAttribute("aria-label", UI.filter.aria);
+	document.getElementById("f-ouverts-t").textContent = UI.filter.open;
+	if (!st.length && !ag && !autres.length) return;
+	fStatut.innerHTML = `<option value="">${esc(UI.filter.all)}</option>` + st.map(s => `<option value="s:${esc(s)}">${esc(UI.statut[s])}</option>`).join("") +
+		(ag ? `<option value="o:agent">${esc(UI.filter.agent)}</option>` : "") + autres.map(o => `<option value="o:${esc(o)}">${esc(UI.origine[o])}</option>`).join("");
+	fStatut.setAttribute("aria-label", UI.filter.statut);
+	fStatut.hidden = false; document.getElementById("filtres").hidden = false;
+})();
+fStatut.addEventListener("change", applySearch);
+fOuverts.addEventListener("change", applySearch);
+// Le module retours dit quand les retours sont lus (case « avec retours ouverts » montree) et quand ils changent.
+document.addEventListener("retours:maj", e => {
+	const pret = !!(e.detail && e.detail.pret);
+	document.getElementById("f-ouverts-l").hidden = !pret;
+	if (!pret && fOuverts.checked) fOuverts.checked = false;
+	document.getElementById("filtres").hidden = fStatut.hidden && !pret;
+	if (filtreActif()) applySearch();
+});
+
+// Copier le lien d'un element (L8) : adresse de la page + ancre ; presse-papiers, sinon copie par selection.
+const annonce = t => { const a = document.getElementById("annonce"); a.textContent = ""; setTimeout(() => { a.textContent = t; }, 30); };
+async function copier(texte) {
+	try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(texte); return true; } } catch (e) { }
+	try {
+		const ta = document.createElement("textarea"); ta.value = texte; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+		document.body.appendChild(ta); ta.select(); const ok = document.execCommand("copy"); ta.remove(); return ok;
+	} catch (e) { return false; }
+}
+wrap.addEventListener("click", async e => {
+	const b = e.target.closest(".lien-btn[data-lien]");
+	if (!b) return;
+	const url = location.href.split("#")[0] + "#" + b.dataset.lien;
+	const ok = await copier(url);
+	b.textContent = ok ? UI.copy.done : UI.copy.btn; b.classList.toggle("ok", ok);
+	annonce(ok ? UI.copy.done : fmt(UI.copy.fail, { u: url }));
+	if (!ok) window.prompt(UI.copy.btn, url);
+	setTimeout(() => { b.textContent = UI.copy.btn; b.classList.remove("ok"); }, 1800);
+});
+
+// Image agrandie (L10) : fenetre modale ; Echap, le bouton Fermer ou un clic hors de l'image la ferment.
+const zoomDlg = document.getElementById("zoom-dlg"), aideDlg = document.getElementById("aide-dlg");
+document.getElementById("zoom-close").textContent = UI.zoom.close;
+document.getElementById("aide-close").textContent = UI.keys.close;
+document.getElementById("aide-t").textContent = UI.keys.title;
+document.getElementById("aide-l").innerHTML = UI.keys.list.map(([k, d]) => `<dt><kbd>${esc(k)}</kbd></dt><dd>${esc(d)}</dd>`).join("");
+// Etape 3.9, L9 : empreinte d'une image (FNV-1a 32 bits de son URI data:, en hexadecimal) : une epingle posee sur une
+// image remplacee depuis se voit. Pas de crypto.subtle : elle manque hors HTTPS (reseau local en http).
+function empreinte(s) { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ("0000000" + h.toString(16)).slice(-8); }
+let zoomCourant = null;
+// Rectangle de l'image dessinee dans l'element (object-fit: contain laisse des marges si le cadre n'a pas ses
+// proportions) : les points sont relatifs a l'image, pas au cadre. Rend aussi le decalage dans le cadre.
+function rectImage(img) {
+	const r = img.getBoundingClientRect(), nw = img.naturalWidth || r.width, nh = img.naturalHeight || r.height;
+	const k = Math.min(r.width / nw, r.height / nh), w = nw * k, h = nh * k;
+	return { x: r.left + (r.width - w) / 2, y: r.top + (r.height - h) / 2, w, h, dx: (r.width - w) / 2, dy: (r.height - h) / 2 };
+}
+function placerCalque() {
+	const img = document.getElementById("zoom-img"), c = rectImage(img), b = document.getElementById("zoom-pins");
+	Object.assign(b.style, { left: img.offsetLeft + c.dx + "px", top: img.offsetTop + c.dy + "px", width: c.w + "px", height: c.h + "px" });
+}
+const STATUT_PIN = { nouveau: "en attente", question: "question", pris: "pris", fait: "appliqué", refuse: "non retenu" };
+function dessinerEpingles() {
+	const z = zoomCourant, boite = document.getElementById("zoom-pins"), aide = document.getElementById("zoom-aide");
+	if (!z || !RETOURS || !RETOURS.epingles) { boite.innerHTML = ""; aide.hidden = true; return; }
+	const l = RETOURS.epingles(z.kind, z.id, z.anciennes);
+	boite.innerHTML = l.map(p => `<button type="button" class="epingle st-${esc(p.statut)}${p.empreinte && p.empreinte !== z.empreinte ? " ancienne" : ""}" data-epingle="${esc(p.id)}" style="left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%" title="${esc(fmt(UI.zoom.pin, { n: p.n, s: STATUT_PIN[p.statut] || p.statut, t: p.texte }) + (p.empreinte && p.empreinte !== z.empreinte ? UI.zoom.ancienne : ""))}" aria-label="${esc(fmt(UI.zoom.pin, { n: p.n, s: STATUT_PIN[p.statut] || p.statut, t: p.texte }))}">${p.n}</button>`).join("");
+	aide.textContent = l.length ? fmt(UI.zoom.aucune, { n: l.length }) : UI.zoom.aide;
+	aide.hidden = !document.getElementById("zoom-cadre").classList.contains("epinglable");
+	placerCalque();
+}
+document.getElementById("zoom-img").addEventListener("load", () => { if (zoomDlg.open) placerCalque(); });
+window.addEventListener("resize", () => { if (zoomDlg.open) placerCalque(); });
+wrap.addEventListener("click", e => {
+	const b = e.target.closest("button.zoom[data-zoom]");
+	const z = b && ZOOM.get(b.dataset.zoom);
+	if (!z || typeof zoomDlg.showModal !== "function") return;
+	zoomCourant = { ...z, ancre: b.dataset.zoom, empreinte: empreinte(z.src) };
+	document.getElementById("zoom-img").src = z.src;
+	document.getElementById("zoom-img").alt = z.nom;
+	document.getElementById("zoom-t").textContent = z.nom;
+	// Epingler : seulement sur une page servie (retours branches) ; la fiche porte le marquage des retours.
+	document.getElementById("zoom-cadre").classList.toggle("epinglable", !!(RETOURS && RETOURS.ecrire && document.getElementById(b.dataset.zoom) && document.querySelector(".fb-btn")));
+	dessinerEpingles();
+	zoomDlg.showModal();
+});
+document.getElementById("zoom-img").addEventListener("click", e => {
+	const z = zoomCourant, cadre = document.getElementById("zoom-cadre");
+	if (!z || !cadre.classList.contains("epinglable")) return;
+	const r = rectImage(e.currentTarget);
+	if (e.clientX < r.x || e.clientX > r.x + r.w || e.clientY < r.y || e.clientY > r.y + r.h) return;   // dans une marge : rien
+	const x = Math.min(1, Math.max(0, (e.clientX - r.x) / r.w)), y = Math.min(1, Math.max(0, (e.clientY - r.y) / r.h));
+	const point = `${Math.round(x * 10000) / 10000},${Math.round(y * 10000) / 10000}@${z.empreinte}`;
+	zoomDlg.close();
+	RETOURS.ecrire(document.getElementById(z.ancre), { point });
+});
+document.getElementById("zoom-pins").addEventListener("click", e => {
+	const p = e.target.closest("[data-epingle]"); if (!p || !zoomCourant) return;
+	const el = document.getElementById(zoomCourant.ancre), btn = el && el.querySelector(".fb-btn");
+	zoomDlg.close();
+	if (btn) btn.click();
+});
+document.addEventListener("retours:maj", () => { if (zoomDlg.open) dessinerEpingles(); });
+for (const d of [zoomDlg, aideDlg]) d.addEventListener("click", e => { if (e.target === d || e.target.closest(".dlg-head .btn")) d.close(); });
+
+// Raccourcis clavier (L12) : jamais pendant une saisie, ni avec une touche de modification, ni fenetre ouverte.
+let ficheCourante = null;
+function visibles() {
+	const p = document.getElementById("tab-" + curTab);
+	if (!p) return [];
+	return [...p.querySelectorAll(p.classList.contains("mode-tableau") ? ".vt-ligne" : ".card, .row[data-fb-kind]")].filter(x => !x.hidden && x.offsetParent !== null);
+}
+function allerFiche(sens) {
+	const l = visibles(); if (!l.length) return;
+	let i = l.indexOf(ficheCourante);
+	if (i < 0) { const h = window.innerHeight / 3; i = l.findIndex(x => x.getBoundingClientRect().bottom > h); i = i < 0 ? 0 : sens > 0 ? i - 1 : i + 1; }
+	const c = l[Math.max(0, Math.min(l.length - 1, i + sens))];
+	ficheCourante = c;
+	if (!c.hasAttribute("tabindex")) c.setAttribute("tabindex", "-1");
+	c.focus({ preventScroll: true }); flash(c);
+}
+document.addEventListener("keydown", e => {
+	if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+	const t = e.target;
+	if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+	if (document.querySelector("dialog[open]")) return;
+	if (e.key === "/") { e.preventDefault(); qInput.focus(); qInput.select(); }
+	else if (e.key === "j" || e.key === "k") { e.preventDefault(); allerFiche(e.key === "j" ? 1 : -1); }
+	else if (e.key === "r") {
+		const c = ficheCourante && ficheCourante.isConnected && !ficheCourante.hidden ? ficheCourante : (t && t.closest && t.closest("[data-fb-kind]"));
+		const b = c && c.querySelector(".fb-btn");
+		if (b) { e.preventDefault(); b.click(); }
+	}
+	else if (e.key === "?" && typeof aideDlg.showModal === "function") { e.preventDefault(); aideDlg.showModal(); }
+});
+document.addEventListener("focusin", e => { const c = e.target.closest && e.target.closest(".card, .vt-ligne, .row[data-fb-kind]"); if (c) ficheCourante = c; });
+
+// Impression (L11) : en-tete repete sur chaque page (titre, numero de build pose par le serveur, date des donnees).
+function enteteImpression() {
+	const m = document.querySelector('meta[name="wdd-build"]'), b = m ? String(m.getAttribute("content") || "") : "";
+	const v = { t: (DATA && DATA.title) || document.title, b, d: DATA && DATA.generated ? fmtDate(DATA.generated) : "", p: fmtDate(new Date().toISOString()) };
+	document.getElementById("print-head").textContent = fmt(/^\d+$/.test(b) ? UI.print.head : UI.print.nobuild, v);
+}
+enteteImpression();
+window.addEventListener("beforeprint", enteteImpression);
+// Choix Fiches / Tableau retenu pour chaque onglet (avant le module retours : les lignes sont alors decorees avec le reste).
+if (DATA) for (const t of DATA.tabs || []) { let m = null; try { m = localStorage.getItem(cleVue(t.id)); } catch (e) { } if (m === "tableau") { const p = document.getElementById("tab-" + t.id); if (p && p.querySelector(".vue-tableau")) setVue(p, "tableau", false); } }
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+route(location.hash.slice(1));
+
+// Retours : le module gere boutons, tiroir et modes degrades ; l'adaptateur choisi au build garde les retours.
+// La page lui donne seulement ce qui releve de l'affichage (libelles des sortes, dates, onglets, navigation).
+if (DATA && RETOURS && window.RetoursStockage) RETOURS.demarrer({
+	stockage: window.RetoursStockage,
+	textes: UI.fb,
+	codex: DATA.generated || "",
+	page: {
+		sorte: kindLabel,
+		date: fmtDate,
+		ongletCourant: () => { const t = TABS.find(x => x.id === curTab); return t ? { id: t.id, label: t.label } : null; },
+		aller: (tab, el) => { openTab(tab); setHash(el && el.id ? el.id : tab); if (el) requestAnimationFrame(() => flash(el)); else window.scrollTo(0, 0); },
+	},
+	progression: { element: "val-progress", kind: "validation", ids: SETS.flatMap(s => s.validations || []).map(v => String(v.id)), texte: UI.notes.answered },
+});
+</script>

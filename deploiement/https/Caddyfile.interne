@@ -1,0 +1,20 @@
+# Caddy devant le serveur sur un réseau isolé (étape 3.7, A2 ; docs/acces-distant.md) : aucun accès à Internet.
+# Certificats signés par l'autorité interne de Caddy (« tls internal ») : son certificat racine est à installer sur
+# chaque poste de l'équipe (voir docs/acces-distant.md). Les deux noms doivent pointer vers cette machine (DNS interne
+# ou fichier hosts de chaque poste).
+{
+	# Autorité interne seulement (tls internal ci-dessous) : aucun appel sortant pour les certificats.
+	skip_install_trust
+}
+
+{$WDD_DOMAINE} {
+	tls internal
+	encode gzip
+	reverse_proxy wdd:8080
+}
+
+{$WDD_DOMAINE_PAGES} {
+	tls internal
+	encode gzip
+	reverse_proxy wdd:8080
+}

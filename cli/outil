@@ -1,0 +1,6 @@
+#!/bin/sh
+# Lanceur de la CLI « outil » (Git Bash, macOS, Linux) : node cli/outil.ts <commande>. Node 24 requis.
+# Mettre ce dossier (cli/) dans le PATH, ou un lien vers ce fichier.
+ICI=$(dirname "$0")
+[ -L "$0" ] && ICI=$(dirname "$(readlink -f "$0" 2>/dev/null || readlink "$0")")
+exec node "$ICI/outil.ts" "$@"

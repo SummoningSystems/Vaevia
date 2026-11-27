@@ -1,0 +1,691 @@
+/* Méta-interface, direction « Studio » (étape 3.10) : un tableau de production. Une barre d'encre en tête, des neutres
+   bleutés, un accent indigo, des couleurs de statut et de discipline lisibles d'un coup d'œil (texte, fond et filet pour
+   chaque statut de ticket et de retour), des compteurs en pastilles, des titres en Bahnschrift (police de Windows, avec
+   des replis système ; aucune police externe). Les grandes surfaces restent calmes : la couleur va aux repères (filets,
+   pastilles, compteurs), pas aux fonds. La géométrie et la densité sont celles de la direction précédente (« Atelier »,
+   étape 3.6, points 27 à 45) : barre d'une ligne dès 48 rem, règle des 360 px, cibles de 28 et 36 px.
+   Clair et sombre selon le système, lisible à 360 px, focus orange de 3 px toujours visible. Aucun style en ligne.
+   La barre (.entete) et le bandeau du Wiki (serveur/src/bandeau.ts) partagent mesures et jetons. */
+:root {
+	color-scheme: light dark;
+	--fond: #eceef4;
+	--surface: #ffffff;
+	--surface-2: #e4e7ef;
+	--survol: #dce0ea;
+	--bord: #d3d7e3;
+	--bord-bouton: #b3b9cc;
+	--bord-champ: #7c839e;
+	--texte: #171a2e;
+	--texte-doux: #4c5370;
+	--accent: #4536c9;
+	--accent-texte: #ffffff;
+	--accent-fond: #e9e6fc;
+	--lien: #3a2fb3;
+	--focus: #c2410c;
+	--ok: #17713d;
+	--ok-fond: #ddf3e4;
+	--alerte: #8a4b00;
+	--alerte-fond: #fdeccc;
+	--erreur: #b3261e;
+	--erreur-fond: #fde4e1;
+	--ombre: 0 1px 2px rgb(23 26 46 / 7%);
+	--ombre-flottant: 0 10px 28px rgb(23 26 46 / 18%), 0 1px 2px rgb(23 26 46 / 8%);
+	--rayon: 6px;
+	--rayon-grand: 8px;
+	--gouttiere: 16px;
+	--police: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+	--police-titres: Bahnschrift, "DIN Alternate", "Barlow Semi Condensed", "Roboto Condensed", "Segoe UI", system-ui, sans-serif;
+	--mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+	/* Barre d'encre (en-tête) : la même dans les deux thèmes, un peu plus sombre en sombre. Ses propres jetons de texte,
+	   de soulignement (onglet courant), de focus et d'état, calculés sur l'encre. */
+	--barre: #1c1f3a;
+	--barre-texte: #eef0fb;
+	--barre-doux: #b4b8d6;
+	--barre-bord: #3a4070;
+	--barre-survol: #2b2f55;
+	--barre-pastille: #363c68;
+	--barre-actif: #a197ff;
+	--barre-focus: #ff9d4d;
+	--barre-ok: #7fe0a4;
+	--barre-alerte: #ffc46b;
+	--barre-erreur: #ffa39c;
+	--marque-fond: #7b6cf6;
+	/* Statuts de ticket : texte (et pastille pleine), fond teinté, filet. À faire gris, pris bleu, en revue violet, fait vert. */
+	--st-a-faire: #4a5468; --st-a-faire-fond: #e4e7ee; --st-a-faire-filet: #6b7590;
+	--st-pris: #1d48c4; --st-pris-fond: #dfe7fd; --st-pris-filet: #2b5be0;
+	--st-en-revue: #8a1fa6; --st-en-revue-fond: #f5e3fa; --st-en-revue-filet: #a83fc4;
+	--st-fait: #17713d; --st-fait-fond: #ddf3e4; --st-fait-filet: #1f9150;
+	/* Statuts de retour : en attente ambre, question framboise, non retenu gris ; « pris en compte » et « appliqué »
+	   reprennent pris et fait des tickets. Le site du Wiki (template.html) a les mêmes. */
+	--r-nouveau: #8a4b00; --r-nouveau-fond: #fdeccc; --r-nouveau-filet: #b36b00;
+	--r-question: #ad1550; --r-question-fond: #fde2ec; --r-question-filet: #d6336f;
+	--r-refuse: #555b70; --r-refuse-fond: #e7e8ee; --r-refuse-filet: #7c839e;
+	/* Disciplines : six teintes, attribuées par le rang dans les réglages (data-teinte = rang modulo 6, projet.js). Le
+	   filet sert de bord gauche à la carte (3:1 sur la surface), le texte et le fond à la pastille du ticket (4,5:1). */
+	--d0: #0b6e66; --d0-fond: #d2f4ef; --d0-filet: #109486;
+	--d1: #ad3d0a; --d1-fond: #ffe6d5; --d1-filet: #d9661c;
+	--d2: #5b30c9; --d2-fond: #ebe4fd; --d2-filet: #7c5cf0;
+	--d3: #ad1747; --d3-fond: #fde0e8; --d3-filet: #e8487a;
+	--d4: #4a670a; --d4-fond: #e8f3cf; --d4-filet: #6b8f12;
+	--d5: #0a5f95; --d5-fond: #dbeefb; --d5-filet: #2387c9;
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--fond: #121527;
+		--surface: #1a1e35;
+		--surface-2: #242946;
+		--survol: #2c3254;
+		--bord: #323858;
+		--bord-bouton: #4a5180;
+		--bord-champ: #767da6;
+		--texte: #e9ebf7;
+		--texte-doux: #a8aecb;
+		--accent: #a197ff;
+		--accent-texte: #14112e;
+		--accent-fond: #2b2655;
+		--lien: #b5acff;
+		--focus: #ff9d4d;
+		--ok: #7fe0a4;
+		--ok-fond: #173a2a;
+		--alerte: #ffc46b;
+		--alerte-fond: #3d2c10;
+		--erreur: #ff9b94;
+		--erreur-fond: #44191a;
+		--ombre: 0 1px 2px rgb(0 0 0 / 35%);
+		--ombre-flottant: 0 12px 30px rgb(0 0 0 / 55%);
+		--barre: #0b0d1c;
+		--barre-doux: #a9add0;
+		--barre-bord: #2a2f52;
+		--barre-survol: #1d2140;
+		--barre-pastille: #2a2f52;
+		--st-a-faire: #bcc3d8; --st-a-faire-fond: #2a2f4a; --st-a-faire-filet: #7d86a3;
+		--st-pris: #9db5ff; --st-pris-fond: #1d2a57; --st-pris-filet: #5b82f5;
+		--st-en-revue: #e7a6f7; --st-en-revue-fond: #3a1f4a; --st-en-revue-filet: #c065dc;
+		--st-fait: #83e3a8; --st-fait-fond: #173a2a; --st-fait-filet: #39b46c;
+		--r-nouveau: #ffc46b; --r-nouveau-fond: #3d2c10; --r-nouveau-filet: #e0a040;
+		--r-question: #ff9cc0; --r-question-fond: #44182c; --r-question-filet: #e0578b;
+		--r-refuse: #aeb4ca; --r-refuse-fond: #2a2e44; --r-refuse-filet: #767da6;
+		--d0: #6fe3d3; --d0-fond: #12332f; --d0-filet: #1fb8a4;
+		--d1: #ffad7a; --d1-fond: #3d2414; --d1-filet: #f07a2c;
+		--d2: #c3aeff; --d2-fond: #2a2150; --d2-filet: #8f72ff;
+		--d3: #ff9cb9; --d3-fond: #421a28; --d3-filet: #f05d8c;
+		--d4: #c2e570; --d4-fond: #2a3512; --d4-filet: #93bf2a;
+		--d5: #8ccbff; --d5-fond: #13304a; --d5-filet: #3aa1e8;
+	}
+}
+@media (min-width: 64rem) { :root { --gouttiere: 24px; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+	margin: 0;
+	font: 14px/1.45 var(--police);
+	background: var(--fond);
+	color: var(--texte);
+	overflow-wrap: anywhere;
+	font-variant-numeric: tabular-nums;
+}
+a { color: var(--lien); text-underline-offset: 2px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+code, pre, .secret { font-family: var(--mono); font-size: .9em; }
+/* Titres en Bahnschrift (une DIN un peu étroite : lisible serrée, d'où une taille un rien plus grande à hauteur égale). */
+h1, h2, h3 { font-family: var(--police-titres); letter-spacing: 0; }
+h1 { font-size: 1.5rem; line-height: 1.2; font-weight: 700; margin: .25rem 0 .75rem; }
+h2 { font-size: 1.07rem; line-height: 1.3; font-weight: 600; margin: 1.5rem 0 .5rem; }
+h3 { font-size: 1rem; line-height: 1.3; font-weight: 600; margin: 1rem 0 .35rem; }
+p { margin: .4rem 0; }
+/* Le titre reçoit le focus après une navigation (lecteurs d'écran) : pas d'anneau à la souris, un anneau à la largeur
+   du texte au clavier. */
+h1[tabindex] { width: fit-content; max-width: 100%; }
+h1:focus { outline: none; }
+h1:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+
+/* Focus : un anneau orange de 3 px, distinct de l'accent (onglet courant, bouton principal). */
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+::placeholder { color: var(--texte-doux); opacity: 1; }
+.invisible { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.evitement { position: absolute; left: 8px; top: -3rem; background: var(--surface); color: var(--texte); padding: .45rem .75rem; z-index: 10; border: 1px solid var(--bord); border-radius: var(--rayon); }
+.evitement:focus { top: 6px; }
+[hidden] { display: none !important; }
+
+/* --- Barre du haut : une barre d'encre (direction Studio) d'une ligne au bureau (marque, Administration, projet et onglets,
+   état du direct, compte), deux lignes sous 48 rem (le projet et ses onglets passent dessous, sur l'encre aussi). Même
+   dessin que le bandeau du Wiki (serveur/src/bandeau.ts). La gouttière suit le bord du contenu (main : 80 rem centrés) :
+   barre et page restent alignées au-delà de 1280 px. L'ordre du DOM ne change pas (lecteurs d'écran, scénarios) : seul
+   « order » place les éléments. Sur l'encre, le focus prend --barre-focus (orange clair, 3:1 sur l'encre). ----------- */
+.entete {
+	--focus: var(--barre-focus);
+	display: flex; flex-wrap: wrap; align-items: center; column-gap: 4px; min-height: 44px;
+	background: var(--barre); color: var(--barre-texte); border-bottom: 1px solid var(--barre-bord);
+	padding: 0 max(var(--gouttiere), calc((100% - 80rem) / 2 + var(--gouttiere)));
+}
+.entete-haut { display: contents; }
+.marque {
+	order: 0; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-right: 4px; padding: 0 6px 0 0;
+	font: 600 .9375rem/1.2 var(--police-titres); color: var(--barre-texte); text-decoration: none; overflow-wrap: normal;
+}
+.marque:hover { text-decoration: none; }
+.marque:hover .marque-texte { text-decoration: underline; text-underline-offset: 3px; }
+.marque svg { width: 22px; height: 22px; flex: none; display: block; }
+/* Icône : trois barres de tableau sur un carré indigo clair (lisible sur l'encre), comme icone.svg. */
+.marque .m-fond { fill: var(--marque-fond); }
+.marque .m-trait { fill: #ffffff; }
+.marque .m-trait.m-2 { fill: #ffd27a; }
+.marque .m-trait.m-3 { fill: #8ff0c4; }
+.entete-haut > nav { order: 1; }
+.entete-haut > nav:not(:has(a:not([hidden]))) { display: none; }
+.entete nav ul, .nav-projet ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; min-width: 0; }
+.entete-haut nav a {
+	display: inline-flex; align-items: center; min-height: 30px; padding: 0 8px; border-radius: var(--rayon);
+	color: var(--barre-doux); text-decoration: none; font-weight: 500;
+}
+.entete-haut nav a:hover { color: var(--barre-texte); background: var(--barre-survol); }
+.entete-haut nav a[aria-current="page"] { color: var(--barre-texte); background: var(--barre-survol); }
+.direct {
+	order: 5; display: flex; align-items: center; gap: 6px; margin: 0; padding-left: 12px;
+	font-size: .86rem; color: var(--barre-doux); white-space: nowrap;
+}
+.direct::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--barre-doux); flex: none; }
+.direct.ouvert::before { background: var(--barre-ok); }
+.direct.connexion::before { background: var(--barre-alerte); }
+.direct.coupe { color: var(--barre-erreur); font-weight: 600; white-space: normal; }
+.direct.coupe::before { background: var(--barre-erreur); }
+/* Sous 64 rem, la barre tient sur sa ligne avec Administration et un nom long (une ligne dès 48 rem, la ligne du haut
+   au-dessous, comme le bandeau du Wiki qui n'a pas cet état) : « En direct » se réduit à son point (le texte reste pour les
+   lecteurs d'écran, et en info-bulle). « Connexion… » et « Direct coupé » gardent leur texte. */
+@media (max-width: 64rem) {
+	.direct.ouvert .direct-texte { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+	.direct.ouvert { padding-left: 8px; }
+}
+/* Le compte prend la place qui reste, aligné à droite ; un nom trop long est abrégé (nom complet en info-bulle). */
+.qui {
+	order: 4; flex: 1 1 0; min-width: 6rem; margin: 0; padding-left: 12px; text-align: right;
+	white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--barre-doux); font-size: .93rem;
+}
+.qui #qui { color: var(--barre-texte); font-weight: 600; }
+.nav-projet {
+	order: 10; flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: stretch; column-gap: 4px; min-width: 0;
+	border-top: 1px solid var(--barre-bord); min-height: 40px;
+}
+.nav-projet .projet-nom {
+	display: inline-flex; align-items: center; gap: 12px; margin-right: 4px; min-height: 40px;
+	font: 600 .9375rem/1.2 var(--police-titres); color: var(--barre-texte);
+}
+.nav-projet .projet-nom::after { content: ""; width: 1px; height: 20px; background: var(--barre-bord); flex: none; }
+.nav-projet li { display: flex; }
+.nav-projet a {
+	display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 9px;
+	color: var(--barre-doux); text-decoration: none; font-weight: 500; overflow-wrap: normal;
+}
+/* Onglet courant : texte clair et soulignement indigo clair de 3 px (le focus, lui, est orange). */
+.nav-projet a:hover { color: var(--barre-texte); box-shadow: inset 0 -3px 0 var(--barre-bord); }
+.nav-projet a[aria-current] { color: var(--barre-texte); box-shadow: inset 0 -3px 0 var(--barre-actif); }
+.nav-projet a[aria-current="page"] { font-weight: 600; }
+.nav-projet a:focus-visible { outline-offset: -3px; }
+/* Compteur d'un onglet (retours à traiter, tickets à faire), dans le lien, après son libellé : une pastille pleine, ambre
+   pour ce qui attend (retours à traiter), discrète pour les tickets à faire. */
+.nav-projet .onglet-compte {
+	display: inline-flex; align-items: center; justify-content: center; min-width: 1.35rem; padding: 0 .35rem; border-radius: 999px;
+	font: 700 .8rem/1.35rem var(--police-titres); background: var(--barre-pastille); color: var(--barre-texte);
+}
+.nav-projet .onglet-compte.nouveaux { background: var(--barre-alerte); color: var(--barre); }
+@media (min-width: 48rem) {
+	.nav-projet { order: 2; flex: 0 1 auto; border-top: 0; min-height: 44px; }
+	.nav-projet .projet-nom { min-height: 44px; }
+	.nav-projet .projet-nom::before { content: ""; width: 1px; height: 20px; background: var(--barre-bord); flex: none; }
+	.nav-projet a { min-height: 44px; }
+}
+/* Téléphone (comme le bandeau du Wiki, bandeau.ts) : projet et onglets sur une même ligne quand le nom tient en entier
+   à côté des onglets ; sinon les onglets passent ensemble à la ligne suivante (jamais un onglet seul), et le nom garde
+   toute la ligne (points de suspension au-delà, nom complet en info-bulle). Pas de séparateur : il resterait seul en bout
+   de ligne ; le nom en gras se distingue des onglets. */
+@media (max-width: 40rem) {
+	.nav-projet { column-gap: 8px; }
+	.nav-projet .projet-nom { display: block; flex: 0 1 auto; min-width: 0; line-height: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 0; }
+	.nav-projet .projet-nom::after { content: none; }
+	.nav-projet ul { flex: 0 1 auto; }
+	.nav-projet a { padding: 0 6px; gap: 4px; }
+	.nav-projet .onglet-compte { min-width: 1.1rem; padding: 0 4px; }
+}
+@media (max-width: 23rem) { .nav-projet a { padding: 0 5px; } }
+
+main { max-width: 80rem; margin: 0 auto; padding: 12px var(--gouttiere) 48px; }
+main:focus { outline: none; }
+
+/* --- Contrôles ------------------------------------------------------------------------------------------------ */
+button, input, select, textarea { font: inherit; color: inherit; }
+button {
+	background: var(--surface); border: 1px solid var(--bord-bouton); border-radius: var(--rayon);
+	padding: 0 .75rem; cursor: pointer; min-height: 2rem; font-weight: 600; line-height: 1.2; overflow-wrap: normal;
+}
+button:hover:not(:disabled) { background: var(--accent-fond); border-color: var(--accent); }
+button.principal { background: var(--accent); color: var(--accent-texte); border-color: var(--accent); font-weight: 600; }
+button.principal:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 88%, var(--texte)); border-color: color-mix(in srgb, var(--accent) 88%, var(--texte)); }
+button.danger { color: var(--erreur); border-color: color-mix(in srgb, var(--erreur) 45%, var(--bord-bouton)); }
+button.danger:hover:not(:disabled) { background: var(--erreur-fond); border-color: var(--erreur); }
+/* Désactivé : couleurs explicites plutôt qu'une opacité (le bouton « Traiter les retours (n en attente) » porte un chiffre
+   qu'on doit pouvoir lire). Écrit après .principal et .danger, à spécificité égale ou plus forte. */
+button:disabled, button.principal:disabled, button.danger:disabled {
+	color: var(--texte-doux); background: var(--surface-2); border-color: var(--bord); cursor: not-allowed;
+}
+input[type="text"], input[type="url"], input[type="search"], select, textarea {
+	background: var(--surface); border: 1px solid var(--bord-champ); border-radius: var(--rayon);
+	padding: .3rem .55rem; max-width: 100%; min-height: 2rem;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offset: 1px; }
+textarea { width: 100%; resize: vertical; line-height: 1.45; }
+input[type="checkbox"] { width: 1rem; height: 1rem; margin: 0; accent-color: var(--accent); flex: none; }
+
+.formulaire { display: grid; gap: .65rem; }
+.formulaire .champ input[type="text"], .formulaire .champ input[type="url"], .formulaire .champ select { width: 100%; }
+.formulaire.compact { margin: .5rem 0; }
+.champ { display: grid; gap: .2rem; min-width: 0; }
+.champ label, .etiquette { font-weight: 600; font-size: .93rem; margin: 0; }
+.champ.ligne { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.champ.ligne label { font-weight: 500; color: var(--texte-doux); }
+.aide { color: var(--texte-doux); font-size: .89rem; margin: 0; }
+.rangee { display: flex; flex-wrap: wrap; gap: .5rem; align-items: end; }
+.rangee > .champ { flex: 1 1 12rem; }
+.actions { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: .5rem 0; }
+.case { display: flex; gap: .5rem; align-items: flex-start; }
+/* Étape 3.9, E2 : onglets du Wiki à cocher pour un testeur externe. */
+.cases { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; margin: .5rem 0; }
+.case input { margin-top: .17rem; }
+fieldset { border: 1px solid var(--bord); border-radius: var(--rayon-grand); padding: .5rem .75rem .65rem; margin: 0; min-width: 0; }
+legend { font-weight: 600; padding: 0 .3rem; }
+
+/* --- Messages, bandeaux, états --------------------------------------------------------------------------------- */
+/* Messages et bandeaux : un filet de 4 px à gauche, de la couleur de l'état (le fond reste une teinte légère). */
+.message { border-radius: var(--rayon); padding: .45rem .7rem; margin: .5rem 0; border: 1px solid var(--bord); border-left-width: 4px; background: var(--surface); }
+.message.erreur { border-color: color-mix(in srgb, var(--erreur) 40%, transparent); border-left-color: var(--erreur); background: var(--erreur-fond); color: var(--erreur); }
+.message.succes { border-color: color-mix(in srgb, var(--ok) 40%, transparent); border-left-color: var(--ok); background: var(--ok-fond); color: var(--ok); }
+.bandeau { border-radius: var(--rayon-grand); padding: .2rem .85rem; margin: .5rem 0 1rem; border: 1px solid var(--bord); border-left-width: 4px; background: var(--surface); }
+.bandeau p { margin: .4rem 0; }
+.bandeau.alerte { border-color: color-mix(in srgb, var(--alerte) 45%, transparent); border-left-color: var(--alerte); background: var(--alerte-fond); }
+.bandeau.ok { border-color: color-mix(in srgb, var(--ok) 45%, transparent); border-left-color: var(--ok); background: var(--ok-fond); }
+.vide { color: var(--texte-doux); }
+/* États vides des listes (pages, commits, critères, invitations…) et des tableaux : un cadre pointillé, lisible d'un
+   coup d'œil, qui dit qu'il n'y a rien (et non que la page charge encore). */
+li.vide { list-style: none; border: 1px dashed var(--bord-bouton); border-radius: var(--rayon); padding: .35rem .65rem; margin: .25rem 0; }
+.liste > li.vide { margin-left: -1.2rem; }
+.tableau td.vide { text-align: center; padding: .9rem .65rem; }
+/* Chargement : un texte discret qui dit ce qui arrive (pas d'animation), distinct d'un état vide (cadre pointillé). */
+.chargement { color: var(--texte-doux); display: flex; align-items: center; gap: 8px; margin: .5rem 0; }
+.chargement::before { content: ""; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--bord-champ); flex: none; }
+.tableau td.chargement { display: table-cell; text-align: center; padding: .9rem .65rem; }
+.tableau td.chargement::before { display: inline-block; margin-right: 8px; vertical-align: -1px; }
+
+.barre { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; margin: 4px 0 10px; }
+.barre h1 { margin: 0; }
+.filtres { display: flex; flex-wrap: wrap; gap: .4rem 1rem; align-items: center; margin: 0 0 .6rem; }
+.filtres select, .filtres input { min-height: 1.85rem; padding-top: .15rem; padding-bottom: .15rem; }
+.fil { margin: .25rem 0 0; font-size: .93rem; }
+.fil a { color: var(--texte-doux); text-decoration: none; }
+.fil a:hover { color: var(--texte); text-decoration: underline; }
+
+/* --- Accueil : boîte « À moi » (étape 3.7, E1) ------------------------------------------------------------------ */
+.a-moi { margin: 0 0 1rem; }
+.a-moi h2 { font-size: 1rem; margin: 0 0 .4rem; }
+.a-moi h3 { font-size: .93rem; margin: .5rem 0 .2rem; color: var(--texte-doux); }
+.a-moi-liste { list-style: none; padding: 0; margin: 0; background: var(--surface); border: 1px solid var(--bord); border-radius: var(--rayon-grand); }
+.a-moi-liste > li { padding: .45rem .8rem; border-top: 1px solid var(--bord); line-height: 1.45; overflow-wrap: anywhere; }
+.a-moi-liste > li:first-child { border-top: 0; }
+.a-moi-liste a { font-weight: 550; }
+.a-moi-liste .extrait { color: var(--texte-doux); }
+.a-moi-liste .reste { color: var(--texte-doux); font-size: .89rem; }
+/* Pastilles aux couleurs des statuts : question framboise (comme un retour en question), en revue violet (comme la colonne). */
+.a-moi .pastille { display: inline-block; font-size: .78rem; font-weight: 700; padding: 0 .45rem; line-height: 1.35rem; border-radius: 999px; vertical-align: 1px; }
+.a-moi .pastille.question { color: var(--r-question); background: var(--r-question-fond); }
+.a-moi .pastille.a-valider { color: var(--lien); background: var(--accent-fond); }
+.a-moi .pastille.en-revue { color: var(--st-en-revue); background: var(--st-en-revue-fond); }
+/* Étape 3.9, E3 : retour confié, mention. */
+.a-moi .pastille.pour-moi, .a-moi .pastille.mentions { color: var(--texte); background: var(--survol); }
+.a-moi-vide { margin: 0; padding: .5rem .8rem; border: 1px dashed var(--bord-bouton); border-radius: var(--rayon); font-size: .93rem; }
+
+/* --- Accueil : une ligne par projet ---------------------------------------------------------------------------- */
+.projets {
+	list-style: none; padding: 0; margin: 0; background: var(--surface);
+	border: 1px solid var(--bord); border-top: 3px solid var(--accent); border-radius: var(--rayon-grand); box-shadow: var(--ombre);
+}
+.projet {
+	display: grid; grid-template-columns: minmax(0, 1fr); gap: .15rem 1.5rem; padding: .7rem .9rem;
+	border-top: 1px solid var(--bord);
+}
+.projet:first-child { border-top: 0; }
+.projet h2 { margin: 0; font-size: 1.07rem; }
+/* Titre qui est un lien (projet à l'Accueil, ticket du Kanban) : couleur du texte, soulignement fin au repos (le lien se
+   voit sans survol, au toucher aussi), plus marqué au survol. */
+.projet h2 a, .carte h3 a { color: var(--texte); text-decoration: underline; text-decoration-color: var(--bord-champ); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.projet h2 a:hover, .carte h3 a:hover { color: var(--lien); text-decoration-color: currentColor; text-decoration-thickness: 2px; }
+.projet .aide code { font-size: .86em; }
+.chiffres { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .15rem 1rem; color: var(--texte-doux); }
+.chiffres strong { color: var(--texte); font: 700 1.07rem/1.2 var(--police-titres); }
+/* Des retours attendent : le chiffre passe en ambre (même code que la pastille « En attente ») et mène à la liste des
+   retours filtrée sur « En attente » ; les questions, en framboise (pastille « Question »), à la liste filtrée sur « Question ». */
+.chiffres .nouveaux a { color: var(--r-nouveau); }
+.chiffres .nouveaux a strong { color: var(--r-nouveau); }
+.chiffres .questions a, .chiffres .questions a strong { color: var(--r-question); }
+.liens { display: flex; flex-wrap: wrap; gap: .25rem .2rem; margin: 0; }
+.liens a { display: inline-flex; align-items: center; min-height: 1.85rem; padding: 0 .55rem; border: 1px solid var(--bord-bouton); border-radius: var(--rayon); text-decoration: none; font-weight: 500; overflow-wrap: normal; }
+.liens a:hover { background: var(--accent-fond); border-color: var(--accent); }
+/* Le premier lien (Wiki, où un projet s'ouvre) est plein, aux couleurs de l'accent. */
+.liens a:first-child { background: var(--accent); color: var(--accent-texte); border-color: var(--accent); font-weight: 600; }
+.liens a:first-child:hover { background: color-mix(in srgb, var(--accent) 88%, var(--texte)); }
+@media (min-width: 52rem) {
+	.projet { grid-template-columns: minmax(12rem, 1fr) auto auto; align-items: center; }
+	.projet h2 { grid-column: 1; grid-row: 1; }
+	.projet > .aide { grid-column: 1; grid-row: 2; }
+	.projet .chiffres { grid-column: 2; grid-row: 1 / span 2; }
+	.projet .liens { grid-column: 3; grid-row: 1 / span 2; }
+}
+
+/* --- Kanban ---------------------------------------------------------------------------------------------------- */
+.couloir { margin: 0 0 1rem; }
+/* Couloir : son titre prend la teinte de la discipline (texte, repère carré, compteur plein). */
+.couloir-titre { display: flex; align-items: center; gap: 8px; margin: .75rem 0 .4rem; font-size: 1rem; color: var(--d, var(--texte)); }
+.couloir-titre::before { content: ""; width: 10px; height: 10px; border-radius: 3px; flex: none; background: var(--d-filet, var(--bord-bouton)); }
+.couloir-titre .compte { background: var(--d, var(--texte-doux)); }
+/* Compteur en pastille pleine (colonne, couloir) : « 2 » plutôt que « (2) ». */
+.compte {
+	display: inline-flex; align-items: center; justify-content: center; min-width: 1.4rem; padding: 0 .4rem; border-radius: 999px;
+	font: 700 .8rem/1.35rem var(--police-titres); background: var(--texte-doux); color: var(--surface);
+}
+/* Disciplines : data-teinte = rang dans les réglages (projet.js, teinteDiscipline). */
+[data-teinte="0"] { --d: var(--d0); --d-fond: var(--d0-fond); --d-filet: var(--d0-filet); }
+[data-teinte="1"] { --d: var(--d1); --d-fond: var(--d1-fond); --d-filet: var(--d1-filet); }
+[data-teinte="2"] { --d: var(--d2); --d-fond: var(--d2-fond); --d-filet: var(--d2-filet); }
+[data-teinte="3"] { --d: var(--d3); --d-fond: var(--d3-fond); --d-filet: var(--d3-filet); }
+[data-teinte="4"] { --d: var(--d4); --d-fond: var(--d4-fond); --d-filet: var(--d4-filet); }
+[data-teinte="5"] { --d: var(--d5); --d-fond: var(--d5-fond); --d-filet: var(--d5-filet); }
+.colonnes { display: grid; gap: 10px; grid-template-columns: 1fr; }
+@media (min-width: 40rem) { .colonnes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 64rem) { .colonnes { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* Colonne : un filet de statut de 3 px en tête, le titre et son compteur plein aux couleurs du statut ; le fond reste neutre
+   (un seul repère de couleur par colonne, répété dans chaque couloir). */
+.colonne {
+	background: var(--surface-2); border-radius: var(--rayon-grand); padding: 0 6px 6px; min-width: 0;
+	border: 1px solid transparent; border-top: 3px solid var(--st-filet, var(--bord-bouton));
+}
+.colonne.survol { border-color: var(--accent); background: var(--accent-fond); }
+.colonne h2 { display: flex; align-items: center; gap: 7px; font-size: 1rem; margin: 0; padding: 7px 4px 7px; color: var(--st, var(--texte)); }
+.colonne h2 .compte { margin-left: auto; background: var(--st, var(--texte-doux)); color: var(--surface); }
+.colonne[data-statut="a-faire"] { --st: var(--st-a-faire); --st-filet: var(--st-a-faire-filet); }
+.colonne[data-statut="pris"] { --st: var(--st-pris); --st-filet: var(--st-pris-filet); }
+.colonne[data-statut="en-revue"] { --st: var(--st-en-revue); --st-filet: var(--st-en-revue-filet); }
+.colonne[data-statut="fait"] { --st: var(--st-fait); --st-filet: var(--st-fait-filet); }
+.colonne > .vide { margin: 0; padding: .6rem; font-size: .89rem; border: 1px dashed var(--bord-bouton); border-radius: var(--rayon); text-align: center; }
+/* Dans un couloir (une rangée par discipline), une case vide tient sur une ligne, sans cadre : le cadre pointillé reste au
+   tableau sans couloirs. */
+.couloir .colonne > .vide { border: 0; padding: 0 4px 2px; text-align: left; font-size: .82rem; line-height: 1.4; }
+.couloir .colonne:has(> .vide) { padding-bottom: 4px; }
+/* Une seule colonne par ligne (téléphone) : un statut sans ticket se réduit à son en-tête et à son « 0 ». */
+@media (max-width: 40rem) {
+	.colonne:has(> .vide) { padding-bottom: 0; }
+	.colonne > .vide { display: none; }
+}
+.carte {
+	background: var(--surface); border: 1px solid var(--bord); border-left: 4px solid var(--d-filet, var(--bord-bouton)); border-radius: var(--rayon); padding: 7px 9px 7px 9px; margin: 0 0 6px;
+	box-shadow: var(--ombre);
+	display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 6px; align-items: end;
+}
+.carte:last-child { margin-bottom: 0; }
+.carte:hover { border-top-color: var(--bord-bouton); border-right-color: var(--bord-bouton); border-bottom-color: var(--bord-bouton); }
+.carte[draggable="true"] { cursor: grab; }
+.carte-id { grid-column: 1 / -1; margin: 0; font: 600 .82rem/1.3 var(--police-titres); color: var(--texte-doux); }
+/* Le titre d'une carte reste dans la police du texte (lu en phrase, souvent long). */
+.carte h3 { grid-column: 1 / -1; font: 600 .93rem/1.35 var(--police); margin: .1rem 0 .3rem; }
+.carte-infos { grid-column: 1; list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .1rem .65rem; font-size: .82rem; color: var(--texte-doux); }
+.carte .menu { grid-column: 2; }
+.pastille { background: var(--d-fond, var(--surface-2)); border-radius: 999px; padding: 0 .5rem; color: var(--d, var(--texte)); font-weight: 700; white-space: nowrap; overflow-wrap: normal; }
+/* Dans le couloir de sa discipline, la carte ne répète pas la pastille : le bord gauche et le titre du couloir suffisent. */
+.couloir .carte-infos .pastille { display: none; }
+
+.menu { position: relative; }
+.menu-bouton { font-size: .82rem; padding: 0 .5rem; min-height: 1.6rem; color: var(--texte-doux); background: transparent; border-color: var(--bord); }
+.menu-bouton:hover:not(:disabled), .menu-bouton[aria-expanded="true"] { color: var(--texte); }
+/* Seule action de la carte au toucher et au clavier : une cible plus haute sur téléphone. */
+@media (pointer: coarse), (max-width: 40rem) { .carte .menu-bouton { min-height: 36px; } }
+.menu-liste {
+	position: absolute; z-index: 5; right: 0; top: calc(100% + 4px); min-width: 11rem; max-width: calc(100vw - 32px);
+	background: var(--surface); border: 1px solid var(--bord); border-radius: var(--rayon-grand); box-shadow: var(--ombre-flottant);
+	display: grid; padding: 4px;
+}
+.menu-liste [role="menuitem"] { text-align: left; border: 0; background: transparent; border-radius: 4px; min-height: 1.9rem; font-weight: 400; }
+.menu-liste [role="menuitem"]:hover, .menu-liste [role="menuitem"]:focus { background: var(--accent-fond); }
+
+/* --- Ticket : contenu à gauche, détails à droite sur un écran large ----------------------------------------------- */
+h1 .id { color: var(--texte-doux); font-weight: 700; }
+.statut-ligne { margin: -.4rem 0 .4rem; color: var(--texte-doux); }
+/* Pastille d'état (ticket, retour) : un point et un libellé sur la teinte du statut. Une seule couleur par statut, partout
+   (colonnes, filets des retours, Accueil, Wiki). Les teintes sont opaques : une ligne cochée ne les change pas. */
+.badge {
+	display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 0 .5rem; font-size: .8rem; font-weight: 700;
+	line-height: 1.6; white-space: nowrap; overflow-wrap: normal; color: var(--b, var(--texte-doux)); background: var(--b-fond, var(--surface-2));
+}
+.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.statut-a-faire { --b: var(--st-a-faire); --b-fond: var(--st-a-faire-fond); color: var(--st-a-faire); }
+.statut-pris, .retour-pris { --b: var(--st-pris); --b-fond: var(--st-pris-fond); color: var(--st-pris); }
+.statut-en-revue { --b: var(--st-en-revue); --b-fond: var(--st-en-revue-fond); color: var(--st-en-revue); }
+.statut-fait, .retour-fait { --b: var(--st-fait); --b-fond: var(--st-fait-fond); color: var(--st-fait); }
+.retour-nouveau { --b: var(--r-nouveau); --b-fond: var(--r-nouveau-fond); color: var(--r-nouveau); }
+.retour-question { --b: var(--r-question); --b-fond: var(--r-question-fond); color: var(--r-question); }
+.retour-refuse { --b: var(--r-refuse); --b-fond: var(--r-refuse-fond); color: var(--r-refuse); }
+.infos {
+	display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .2rem 1rem; margin: .5rem 0;
+	background: var(--surface); border: 1px solid var(--bord); border-radius: var(--rayon-grand); padding: .55rem .8rem; font-size: .93rem;
+}
+.infos dt { color: var(--texte-doux); }
+.infos dd { margin: 0; }
+.markdown { background: var(--surface); border: 1px solid var(--bord); border-radius: var(--rayon-grand); padding: .15rem .9rem; }
+.markdown pre { background: var(--surface-2); padding: .55rem; border-radius: 4px; overflow-x: auto; white-space: pre; }
+.markdown blockquote { margin: .5rem 0; padding-left: .75rem; border-left: 3px solid var(--bord-bouton); color: var(--texte-doux); }
+.liste { padding-left: 1.2rem; margin: .25rem 0; }
+.liste li { margin: .2rem 0; }
+.liste-cases { list-style: none; padding: 0; margin: .25rem 0; display: grid; gap: .3rem; }
+.texte-retour { white-space: pre-line; }
+.historique { font-size: .9rem; color: var(--texte-doux); }
+.carte-form { background: var(--surface); border: 1px solid var(--accent); border-left-width: 4px; border-radius: var(--rayon-grand); padding: .2rem .9rem .5rem; margin: .75rem 0; }
+@media (min-width: 64rem) {
+	body[data-vue="ticket"] #vue { display: grid; grid-template-columns: minmax(0, 1fr) 17rem; column-gap: 24px; align-items: start; }
+	body[data-vue="ticket"] #vue > * { grid-column: 1; }
+	body[data-vue="ticket"] #vue > .infos { grid-column: 2; grid-row: 2 / span 12; margin-top: .4rem; }
+	body[data-vue="ticket"] #vue > section h2 { margin-top: 1.25rem; }
+}
+
+/* --- Tableaux : en cartes sous 40 rem ------------------------------------------------------------------------- */
+.defile { max-width: 100%; overflow-x: auto; }
+.tableau {
+	width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface);
+	border: 1px solid var(--bord); border-radius: var(--rayon-grand);
+}
+.tableau th, .tableau td { text-align: left; vertical-align: top; padding: .45rem .65rem; border-bottom: 1px solid var(--bord); }
+.tableau tbody tr:last-child td { border-bottom: 0; }
+.tableau th { font: 600 .9rem/1.3 var(--police-titres); color: var(--texte-doux); background: var(--surface-2); white-space: nowrap; overflow-wrap: normal; vertical-align: bottom; }
+.tableau thead th:first-child { border-top-left-radius: var(--rayon-grand); }
+.tableau thead th:last-child { border-top-right-radius: var(--rayon-grand); }
+.tableau tbody tr:hover td { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+.tableau td[data-label="Date"], .tableau td[data-label="Tickets"], .tableau td[data-label="Statut"],
+.tableau td[data-label="Depuis"], .tableau td[data-label="Créé"] { white-space: nowrap; overflow-wrap: normal; }
+/* Auteur : jamais coupé au milieu d'un mot ; un nom long passe à la ligne entre deux mots (colonne bornée). */
+.tableau td[data-label="Auteur"] { overflow-wrap: normal; min-width: 9.5rem; max-width: 12rem; }
+.tableau td[data-label="Date"] { color: var(--texte-doux); }
+.tableau .sorte { color: var(--texte-doux); font-size: .86rem; }
+.tableau .reponse { display: block; color: var(--texte-doux); font-size: .89rem; margin-top: .2rem; padding-left: .55rem; border-left: 2px solid var(--bord-bouton); }
+.tableau .detail { font-family: var(--mono); font-size: .8rem; }
+.tableau .boutons { display: flex; flex-wrap: wrap; gap: .35rem; }
+.tableau input[type="checkbox"] { margin-top: .15rem; }
+.tableau.retours td:first-child, .tableau.retours th:first-child { width: 2.2rem; padding-right: 0; }
+/* La case et son libellé : 28 px cliquables autour d'une case de 16 px, sans grandir la ligne. */
+.case-sel { display: inline-flex; align-items: center; gap: .5rem; padding: 6px; margin: -6px; cursor: pointer; border-radius: var(--rayon); }
+.case-sel input[type="checkbox"] { margin: 0; }
+.tableau .case-sel input[type="checkbox"] { margin-top: 0; }
+.tout-libelle { display: none; }
+/* Filet de statut à gauche de chaque retour (mêmes couleurs que les pastilles) et ligne cochée surlignée. */
+.tableau.retours tbody tr { --filet: transparent; }
+.tableau.retours tbody tr:has(.retour-nouveau) { --filet: var(--r-nouveau-filet); }
+.tableau.retours tbody tr:has(.retour-pris) { --filet: var(--st-pris-filet); }
+.tableau.retours tbody tr:has(.retour-question) { --filet: var(--r-question-filet); }
+.tableau.retours tbody tr:has(.retour-fait) { --filet: var(--st-fait-filet); }
+.tableau.retours tbody tr:has(.retour-refuse) { --filet: var(--r-refuse-filet); }
+.tableau.retours tbody td:first-child { box-shadow: inset 4px 0 var(--filet); }
+.tableau tbody tr:has(input[type="checkbox"]:checked), .tableau tbody tr:has(input[type="checkbox"]:checked) td { background: var(--accent-fond); }
+.tableau.retours td[data-label="Élément"] { min-width: 8rem; }
+.tableau.retours td[data-label="Élément"] a { overflow-wrap: normal; }
+.tableau.retours td[data-label="Élément"] .sorte { white-space: nowrap; overflow-wrap: normal; }
+@media (max-width: 40rem) {
+	.tableau, .tableau tbody, .tableau tr, .tableau td { display: block; width: 100%; }
+	.tableau thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+	.tableau tr { border-bottom: 1px solid var(--bord); padding: .4rem 0; }
+	.tableau tbody tr:last-child { border-bottom: 0; }
+	.tableau td { border: 0; padding: .12rem .7rem; white-space: normal !important; }
+	.tableau.retours td:first-child { width: 100%; }
+	.tableau td[data-label]::before { content: attr(data-label) " : "; font-weight: 500; color: var(--texte-doux); }
+	.tableau .boutons { display: flex; }
+	.tableau tbody tr:hover td { background: transparent; }
+}
+
+/* --- Valeur affichée une fois ------------------------------------------------------------------------------------ */
+.boite-secret { border: 1px solid color-mix(in srgb, var(--alerte) 45%, transparent); background: var(--alerte-fond); border-radius: var(--rayon-grand); padding: .2rem .75rem .6rem; margin: .5rem 0; }
+.boite-secret .rangee { flex-wrap: nowrap; }
+.boite-secret .secret { flex: 1 1 auto; min-width: 0; width: 100%; }
+.boite-secret .rangee button { flex: none; }
+.disciplines { padding-left: 1.4rem; display: grid; gap: .4rem; margin: .25rem 0 .5rem; }
+.disciplines .rangee input { flex: 1 1 7rem; min-width: 0; }
+.disciplines .rangee button { padding: 0 .55rem; }
+.retours-choisis { margin: 0; padding-left: 1.2rem; }
+
+/* --- Dialogues ------------------------------------------------------------------------------------------------- */
+.dialogue {
+	border: 1px solid var(--bord); border-top: 4px solid var(--accent); border-radius: 10px; background: var(--surface); color: var(--texte); box-shadow: var(--ombre-flottant);
+	padding: .2rem 1.1rem .8rem; width: min(32rem, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto;
+}
+.dialogue.large { width: min(46rem, calc(100vw - 24px)); }
+.dialogue::backdrop { background: rgb(11 13 28 / 55%); }
+.dialogue h2 { margin-top: .8rem; font-size: 1.07rem; }
+
+/* --- Étape 3.5 : appairage d'un poste (§ 2.2) ------------------------------------------------------------------- */
+input[type="radio"] { width: 1rem; height: 1rem; margin: .2rem 0 0; accent-color: var(--accent); flex: none; }
+.code-appairage {
+	font-family: var(--mono); font-size: clamp(1.7rem, 9vw, 2.4rem); font-weight: 700;
+	letter-spacing: .12em; text-align: center; margin: .5rem 0; padding: .45rem; overflow-wrap: normal; white-space: nowrap;
+	background: var(--accent-fond); color: var(--texte); border: 2px solid var(--accent); border-radius: var(--rayon-grand);
+}
+.avertissement-code { font-weight: 600; }
+.saisie-code { font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; }
+.etat-appairage { border-radius: var(--rayon-grand); padding: .2rem .9rem; margin: .5rem 0 1rem; border: 1px solid var(--bord); border-left-width: 4px; background: var(--surface); }
+.etat-appairage p { margin: .5rem 0; }
+.etat-appairage.ok { border-color: color-mix(in srgb, var(--ok) 45%, transparent); border-left-color: var(--ok); background: var(--ok-fond); }
+.etat-appairage.alerte { border-color: color-mix(in srgb, var(--alerte) 45%, transparent); border-left-color: var(--alerte); background: var(--alerte-fond); }
+.etat-appairage:focus { outline: none; }
+.etat-appairage:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.bandeau.note { border-color: var(--accent); background: var(--accent-fond); padding: .45rem .85rem; margin: 0; }
+body[data-vue="appairage"] #vue { max-width: 40rem; }
+
+/* --- Étape 3.5 : bandeau « Traitement des retours » (§ 5.4) : une ligne au bureau ---------------------------------- */
+.traitement {
+	background: var(--surface); border: 1px solid var(--bord); border-left: 4px solid var(--accent); border-radius: var(--rayon-grand); padding: .35rem .8rem; margin: 0 0 .75rem;
+	display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 1rem; align-items: center;
+}
+.traitement-corps { display: contents; }
+.traitement h2 { font-size: 1rem; margin: .25rem 0; white-space: nowrap; overflow-wrap: normal; }
+.traitement h2:focus { outline: none; }
+.traitement h2:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.traitement p { margin: .2rem 0; }
+.traitement .actions { margin: .2rem 0; }
+.traitement .actions .aide { flex: 1 1 14rem; }
+.traitement .veille { color: var(--texte-doux); }
+.traitement > .message, .traitement .demande-active, .traitement .recentes, .traitement-corps > .message { grid-column: 1 / -1; }
+@media (min-width: 52rem) {
+	.traitement { grid-template-columns: auto minmax(0, 1fr) auto; }
+	.traitement .veille { grid-column: 2; }
+	.traitement-corps > .actions { grid-column: 3; justify-content: flex-end; }
+	.traitement-corps > .actions .aide { flex: 0 1 auto; max-width: 25rem; }
+	.traitement:has([data-role=raison]) .veille { grid-column: 2 / -1; }
+	.traitement:has([data-role=raison]) .traitement-corps > .actions { grid-column: 1 / -1; justify-content: flex-start; }
+	.traitement:has([data-role=raison]) .traitement-corps > .actions .aide { flex: 1 1 14rem; max-width: none; }
+}
+.traitement .veille code, .demande-active code { white-space: nowrap; overflow-wrap: normal; }
+.veille { margin: .2rem 0; padding: 0; list-style: none; }
+.veille li, .veille.aucune { display: flex; align-items: baseline; gap: 0 6px; flex-wrap: wrap; }
+.veille li::before, .veille.aucune::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; align-self: center; }
+.veille.aucune::before { background: var(--texte-doux); }
+.veille.aucune { display: block; }
+.veille.aucune::before { display: inline-block; margin-right: 6px; vertical-align: 1px; }
+.demande-active { border-top: 1px solid var(--bord); padding-top: .25rem; margin-top: .2rem; }
+@media (min-width: 40rem) {
+	.demande-active { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1rem; align-items: center; }
+	.demande-active > * { grid-column: 1; }
+	.demande-active > .actions { grid-column: 2; grid-row: 1 / span 4; margin: 0; }
+}
+.demande-active[data-etat="en-cours"] strong { color: var(--st-pris); }
+.recentes { margin: .1rem 0 .2rem; }
+.recentes > summary, .texte-brut > summary { cursor: pointer; padding: .15rem 0; color: var(--texte-doux); font-size: .93rem; width: max-content; max-width: 100%; }
+.recentes > summary:hover, .texte-brut > summary:hover { color: var(--texte); }
+.liste-demandes { list-style: none; padding: 0; margin: .25rem 0; display: grid; gap: .25rem; }
+.liste-demandes > li { border-top: 1px solid var(--bord); padding-top: .2rem; }
+.liste-demandes [data-etat="terminee"] strong { color: var(--ok); }
+.liste-demandes [data-etat="echouee"] strong { color: var(--erreur); }
+.liste-demandes [data-etat="annulee"] strong { color: var(--texte-doux); }
+.texte-brut pre {
+	white-space: pre-wrap; overflow-wrap: anywhere; max-height: 20rem; overflow: auto; margin: .25rem 0 .5rem;
+	background: var(--surface-2); border-radius: 4px; padding: .5rem .6rem; font-size: .85rem;
+}
+.point-etat { display: inline-flex; align-items: center; gap: 6px; }
+.point-etat::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--texte-doux); }
+.point-etat.attente::before { background: var(--alerte); }
+.point-etat.en-cours::before { background: var(--st-pris); }
+
+/* --- Étape 3.5 (§ 8.4, D1) : bloc « Brancher un dépôt de code » (mainteneur, admin) ----------------------------- */
+.branchement { background: var(--surface); border: 1px solid var(--bord); border-radius: var(--rayon-grand); padding: 0 .8rem; margin: 0 0 .75rem; }
+.branchement > summary { cursor: pointer; padding: .45rem 0; font: 600 1rem/1.3 var(--police-titres); width: max-content; max-width: 100%; }
+.branchement[open] { padding-bottom: .4rem; }
+.branchement p { margin: .3rem 0; }
+.branchement .phrase {
+	font-family: var(--mono); font-size: .84rem; overflow-wrap: anywhere; line-height: 1.5;
+	background: var(--surface-2); border: 1px solid var(--bord); border-radius: var(--rayon); padding: .4rem .6rem;
+}
+.branchement .actions { margin: .3rem 0; }
+.branchement .actions .aide { flex: 1 1 14rem; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
+@media print { .entete, .evitement { display: none; } body { background: #fff; color: #000; } }
+
+/* --- Ajustements : filtres, tableaux de gestion, retours en lignes compactes sur un écran étroit ------------------ */
+.filtres .case { align-items: center; }
+.filtres .case label { font-weight: 500; color: var(--texte-doux); font-size: .93rem; }
+.filtres .case input { margin-top: 0; }
+.filtres .champ.ligne:has(input[type="search"]) { flex: 1 1 14rem; max-width: 24rem; }
+.filtres input[type="search"] { flex: 1 1 8rem; min-width: 0; }
+.tableau:not(.retours) td { vertical-align: middle; }
+.tableau td.boutons { display: table-cell; }
+.tableau td.boutons > * + * { margin-left: .35rem; }
+.tableau td .rangee { flex-wrap: nowrap; align-items: center; gap: .35rem; }
+.formulaire.compact .rangee > .champ { flex: 0 1 16rem; }
+@media (max-width: 40rem) {
+	.tableau td.boutons { display: flex; flex-wrap: wrap; gap: .35rem; }
+	.tableau td.boutons > * + * { margin-left: 0; }
+	.tableau td .rangee { flex-wrap: wrap; }
+	.tableau.retours tr { display: flex; flex-wrap: wrap; align-items: center; column-gap: .5rem; padding: .5rem .7rem; }
+	.tableau.retours td { width: auto; padding: .1rem 0; flex: 0 1 auto; }
+	.tableau.retours td:first-child { width: auto; }
+	.tableau.retours td[data-label="Élément"] { flex: 1 1 auto; font-weight: 500; }
+	.tableau.retours td[data-label="Texte"] { flex: 1 1 100%; order: 1; }
+	.tableau.retours td[data-label="Auteur"], .tableau.retours td[data-label="Date"], .tableau.retours td[data-label="Tickets"] { order: 2; color: var(--texte-doux); font-size: .89rem; }
+	.tableau.retours tbody tr { box-shadow: inset 4px 0 var(--filet); padding-left: calc(.7rem + 4px); }
+	.tableau.retours tbody td:first-child { box-shadow: none; }
+	.tableau.retours td[data-label="Élément"] { min-width: 0; }
+	.tableau td[data-label="Auteur"] { max-width: none; min-width: 0; }
+	.tableau.retours td[data-label="Élément"]::before, .tableau.retours td[data-label="Statut"]::before,
+	.tableau.retours td[data-label="Texte"]::before, .tableau.retours td[data-label="Auteur"]::before, .tableau.retours td[data-label="Date"]::before { content: none; }
+	/* Sous 40 rem, l'en-tête du tableau est masqué, sauf sa première case : « Tout sélectionner » reste visible et atteignable. */
+	.tableau.retours thead { position: static; width: auto; height: auto; overflow: visible; clip: auto; display: block; }
+	.tableau.retours thead tr { display: flex; padding: .45rem .7rem; border-bottom: 1px solid var(--bord); background: var(--surface-2); border-radius: var(--rayon-grand) var(--rayon-grand) 0 0; }
+	.tableau.retours thead th { display: none; }
+	.tableau.retours thead th:first-child { display: block; width: auto; padding: 0; border: 0; background: transparent; font-size: .89rem; color: var(--texte-doux); white-space: normal; }
+	.tout-libelle { display: inline; }
+}
+
+/* Étape 3.9 : mes sessions (Accueil, E4), exports (Retours, I4), état du serveur (Administration, A5). */
+.sessions, .exports { margin-top: 1.5rem; }
+.sessions > summary, .exports > summary { cursor: pointer; padding: .45rem 0; font: 600 1rem/1.3 var(--police-titres); width: max-content; max-width: 100%; }
+.echecs { margin: .3rem 0 0; padding-left: 1.2rem; font-size: .9rem; overflow-wrap: anywhere; }

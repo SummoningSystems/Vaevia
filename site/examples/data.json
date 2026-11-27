@@ -1,0 +1,70 @@
+{
+	"title": "Potager Clair",
+	"subtitle": "Revue de l'appli · exemple fictif",
+	"intro": "Les plantes, les écrans et les règles de calcul de l'appli, lus dans sa configuration. Laisse un retour sur ce qui te gêne : chaque fiche a son bouton.",
+	"generated": "2026-11-15T09:30:00Z",
+	"kinds": { "plante": "Plante", "ecran": "Écran", "regle": "Règle" },
+	"tabs": [
+		{
+			"id": "plantes",
+			"label": "Plantes",
+			"intro": "Fiches lues dans config/plants.yaml. Les durées sont en jours après le semis.",
+			"sections": [
+				{
+					"id": "legumes-fruits",
+					"title": "Légumes fruits",
+					"items": [
+						{ "id": "tomate", "kind": "plante", "name": "Tomate", "subtitle": "Solanum lycopersicum", "image": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='18' r='11' fill='%23c8402c'/%3E%3Cpath d='M10 8l6 4 6-4-3 6h-6z' fill='%233d7a3a'/%3E%3C/svg%3E", "badges": [{ "text": "plein soleil", "tone": "warn" }, "tuteur"], "fields": [["Semis", "mars à avril, sous abri"], ["Récolte", "J+90 à J+120"], ["Arrosage", "tous les 2 jours"], ["Espacement", "50 cm"]], "text": "Pincer les gourmands chaque semaine. Arroser au pied, jamais le feuillage.", "links": [["Associée au basilic", "#plantes--basilic"], ["Règle d'arrosage", "#regles--watering.base_interval"]] },
+						{ "id": "courgette", "kind": "plante", "name": "Courgette", "subtitle": "Cucurbita pepo", "badges": [{ "text": "plein soleil", "tone": "warn" }], "fields": [["Semis", "avril à mai"], ["Récolte", "J+60"], ["Arrosage", "tous les 2 jours"], ["Espacement", "1 m"]], "text": "Gourmande en eau et en place. Récolter jeune, à 15–20 cm." },
+						{ "id": "poivron", "kind": "plante", "name": "Poivron", "subtitle": "Capsicum annuum", "badges": [{ "text": "plein soleil", "tone": "warn" }, { "text": "nouvelle", "tone": "accent" }], "fields": [["Semis", "février à mars, au chaud"], ["Récolte", "J+120"], ["Arrosage", "tous les 3 jours"], ["Espacement", "45 cm"]], "text": "Ajoutée en V2. Lent au départ : le calendrier propose un semis plus tôt que la tomate." }
+					]
+				},
+				{
+					"id": "aromatiques",
+					"title": "Aromatiques",
+					"intro": "Petites plantes à associer aux légumes ; l'appli propose les associations lues dans config/companions.yaml.",
+					"items": [
+						{ "id": "basilic", "kind": "plante", "name": "Basilic", "badges": ["mi-ombre", "pot"], "fields": [["Semis", "avril à juin"], ["Récolte", "J+45, en continu"], ["Arrosage", "tous les jours en été"]], "list": ["Éloigne certains pucerons", "Craint le froid sous 10 °C"], "links": [["Associé à la tomate", "#plantes--tomate"]] },
+						{ "id": "persil", "kind": "plante", "name": "Persil", "badges": ["mi-ombre"], "fields": [["Semis", "mars à août"], ["Levée", "J+20 à J+30"], ["Arrosage", "tous les 2 jours"]], "text": "Levée lente : l'appli prévient qu'il ne faut pas ressemer avant J+30." },
+						{ "id": "ciboulette", "kind": "plante", "name": "Ciboulette", "badges": [{ "text": "vivace", "tone": "good" }], "fields": [["Plantation", "mars à mai"], ["Récolte", "J+60, plusieurs coupes"], ["Arrosage", "tous les 3 jours"]] }
+					]
+				}
+			]
+		},
+		{
+			"id": "ecrans",
+			"label": "Écrans de l'appli",
+			"intro": "Les écrans tels que décrits dans src/routes.ts ; les textes sont ceux de fr.json.",
+			"sections": [
+				{
+					"id": "parcours",
+					"title": "Parcours principal",
+					"items": [
+						{ "id": "route:/", "kind": "ecran", "name": "Accueil", "fields": [["Route", "/"], ["Blocs", 3]], "text": "Tâches du jour en tête, puis la météo des 3 prochains jours et les plantes à surveiller.", "list": ["Tâches du jour", "Météo 3 jours", "À surveiller"] },
+						{ "id": "route:/calendrier", "kind": "ecran", "name": "Calendrier", "badges": [{ "text": "refait en V2", "tone": "accent" }], "fields": [["Route", "/calendrier"], ["Vue par défaut", "mois"]], "text": "Semis, repiquages et récoltes sur un mois ; un appui sur un jour ouvre ses tâches." },
+						{ "id": "route:/plante/:id", "kind": "ecran", "name": "Fiche plante", "fields": [["Route", "/plante/:id"]], "text": "Toutes les valeurs de la plante, ses associations et l'historique des arrosages notés.", "links": [["Exemple : tomate", "#plantes--tomate"]] },
+						{ "id": "route:/rappels", "kind": "ecran", "name": "Rappels", "badges": [{ "text": "bug connu", "tone": "bad" }], "fields": [["Route", "/rappels"], ["Rappels par défaut", "08:00"]], "text": "Liste des rappels à venir. Un rappel reporté deux fois disparaît de la liste (ticket ouvert)." },
+						{ "id": "route:/reglages", "kind": "ecran", "name": "Réglages", "fields": [["Route", "/reglages"], ["Options", 7]], "text": "Région, unité de température, heure des rappels, thème." }
+					]
+				}
+			]
+		},
+		{
+			"id": "regles",
+			"label": "Règles de calcul",
+			"intro": "Constantes lues dans config/rules.json et formules du module src/schedule.ts. La clé de chaque règle est sa référence.",
+			"sections": [
+				{
+					"id": "arrosage",
+					"title": "Arrosage et alertes",
+					"items": [
+						{ "id": "watering.base_interval", "kind": "regle", "name": "Intervalle d'arrosage", "fields": [["Base", "intervalle de la plante"]], "table": { "head": ["Condition", "Effet sur l'intervalle"], "rows": [["Au-dessus de 28 °C", "−1 jour (au moins 1)"], ["Pluie > 5 mm", "+1 jour"]] }, "text": "Recalculé chaque matin avec la météo du jour." },
+						{ "id": "frost.alert", "kind": "regle", "name": "Alerte gel", "badges": [{ "text": "notification", "tone": "accent" }], "fields": [["Seuil (°C prévus)", 2.5], ["Délai", "la veille à 18:00"], ["Notification", true]], "text": "Ne concerne que les plantes marquées « craint le froid »." },
+						{ "id": "rotation.years", "kind": "regle", "name": "Rotation des cultures", "fields": [["Même famille au même endroit", "pas avant 3 ans"]], "wide": false },
+						{ "id": "sowing.reminder", "kind": "regle", "name": "Rappel de semis", "fields": [["Avance", "7 jours avant la fenêtre"], ["Rappels par plante", "1 par saison"]] }
+					]
+				}
+			]
+		}
+	]
+}

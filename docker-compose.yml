@@ -1,0 +1,40 @@
+# Serveur d'équipe (étape 3.5, § 1.3). Mode d'emploi : serveur/README.md, section « Docker Compose ».
+#   cp .env.exemple .env                                  (puis régler WDD_URL, voir les commentaires du fichier)
+#   docker compose up -d                                  (construit l'image au premier lancement)
+#   docker compose exec wdd cat /donnees/lien-admin.txt   (lien du compte admin, premier démarrage)
+# Accès distant en HTTPS (Caddy) : ajouter -f docker-compose.https.yml (docs/acces-distant.md).
+# Aucun nom fixe (conteneur, image, volume) : Compose les préfixe par le nom du projet (le dossier, ou -p), et deux
+# projets Compose ne se partagent rien. Le volume s'appelle donc <projet>_wdd-donnees.
+services:
+  wdd:
+    build:
+      # Contexte : la racine du dépôt (l'image embarque site/) ; serveur/Dockerfile.dockerignore n'y laisse entrer que
+      # le nécessaire (ni .env, ni heritage/, ni les tests).
+      context: .
+      dockerfile: serveur/Dockerfile
+    restart: unless-stopped
+    ports:
+      # Port de l'hôte : 127.0.0.1:8080 par défaut, joignable de la machine seule (navigateur local, proxy HTTPS local).
+      # WDD_PORT_PUBLIE=8080 l'ouvre au réseau : choix explicite, en HTTP clair tant qu'aucun proxy HTTPS n'est devant,
+      # et Docker contourne le pare-feu de l'hôte (ufw, firewalld) pour les ports publiés. Voir .env.exemple.
+      # Dans le conteneur, le serveur écoute toujours sur 8080 (WDD_PORT de l'image, lu aussi par le HEALTHCHECK).
+      - "${WDD_PORT_PUBLIE:-127.0.0.1:8080}:8080"
+
+    environment:
+      # Lus dans .env (ou --env-file) ; vides = non définis (voir .env.exemple et serveur/README.md).
+      WDD_URL: ${WDD_URL:-}
+      WDD_URL_PAGES: ${WDD_URL_PAGES:-}
+      WDD_HTTPS: ${WDD_HTTPS:-}
+      # Étape 3.7 : sauvegarde planifiée (vides = 24 h, 7 gardées) ; notifications vers des adresses internes (1).
+      WDD_SAUVEGARDE_HEURES: ${WDD_SAUVEGARDE_HEURES:-}
+      WDD_SAUVEGARDE_GARDER: ${WDD_SAUVEGARDE_GARDER:-}
+      WDD_NOTIF_LOCALES: ${WDD_NOTIF_LOCALES:-}
+    volumes:
+      - wdd-donnees:/donnees
+      # Sauvegardes (étape 3.7, A1 ; une par jour, 7 gardées : WDD_SAUVEGARDE_HEURES, WDD_SAUVEGARDE_GARDER). Pour les
+      # mettre sur un autre disque, remplacer par un dossier de l'hôte : - /chemin/vers/sauvegardes:/sauvegardes
+      - wdd-sauvegardes:/sauvegardes
+
+volumes:
+  wdd-donnees:
+  wdd-sauvegardes:

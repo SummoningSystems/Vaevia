@@ -1,0 +1,10 @@
+{
+  "name": "wdd-cli",
+  "private": true,
+  "description": "CLI « outil » de l'étape 2 (docs/etape2-cli-methode.md) : TypeScript exécuté directement par Node 24, aucune dépendance.",
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "test": "node --test \"test/*.test.ts\""
+  }
+}

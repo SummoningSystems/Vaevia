@@ -1,0 +1,35 @@
+# Accès distant sûr (étape 3.7, A2) : un mandataire HTTPS (Caddy, version figée) devant le serveur, pour une équipe qui
+# ne partage pas un bureau. Mode d'emploi : docs/acces-distant.md. S'ajoute à docker-compose.yml :
+#   docker compose -f docker-compose.yml -f docker-compose.https.yml up -d
+# Réglages dans .env (voir .env.exemple, section « Accès distant ») : WDD_DOMAINE et WDD_DOMAINE_PAGES (deux noms, de
+# préférence deux domaines, qui pointent vers cette machine), WDD_CADDYFILE (Caddyfile : certificats Let's Encrypt,
+# Internet ; Caddyfile.interne : autorité interne de Caddy, réseau isolé).
+# Le serveur reste joignable seulement par Caddy et par la machine elle-même (127.0.0.1:8080) ; Caddy publie 80 et 443.
+services:
+  wdd:
+    environment:
+      WDD_URL: https://${WDD_DOMAINE:?WDD_DOMAINE manquant dans .env (nom de l'administration, ex. retours.exemple.fr)}
+      WDD_URL_PAGES: https://${WDD_DOMAINE_PAGES:?WDD_DOMAINE_PAGES manquant dans .env (nom des Wikis, autre que WDD_DOMAINE, ex. retours-pages.exemple)}
+      WDD_HTTPS: "1"
+
+  caddy:
+    # Version figée : la changer est une décision (lire les notes de version de Caddy).
+    image: caddy:2.8.4
+    restart: unless-stopped
+    depends_on:
+      wdd:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      WDD_DOMAINE: ${WDD_DOMAINE}
+      WDD_DOMAINE_PAGES: ${WDD_DOMAINE_PAGES}
+    volumes:
+      - ./deploiement/https/${WDD_CADDYFILE:-Caddyfile}:/etc/caddy/Caddyfile:ro
+      # Certificats et clés de Caddy (et son autorité interne) : un volume à part, à sauvegarder avec le reste.
+      - wdd-caddy:/data
+
+volumes:
+  wdd-caddy:
