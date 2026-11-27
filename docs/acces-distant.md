@@ -13,6 +13,8 @@ Par défaut, le serveur n'écoute que sur la machine qui le fait tourner. `-Rese
 - **Sur Internet :** rien d'autre. Caddy obtient et renouvelle seul les certificats (Let's Encrypt).
 - **Sur un réseau isolé :** une autorité interne (voir plus bas), et des noms résolus par le DNS interne ou par le fichier `hosts` de chaque poste.
 
+Sur Ubuntu, `./installer-ubuntu.sh` fait toutes les étapes ci-dessous (et installe Docker) : voir le README, « Installer le serveur d'équipe sur Ubuntu ». Les étapes restent utiles pour une autre machine ou pour comprendre ce qu'il règle.
+
 ## Étapes
 
 1. Dans `.env` (copie de `.env.exemple`), régler les domaines :
@@ -74,5 +76,5 @@ Ce fichier n'est pas secret : c'est la clé privée qui l'est, et elle reste dan
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-- **Vérifié le 27/11/2026, sur le Docker d'un poste Windows (moteur Linux)** : les deux `Caddyfile` sont valides pour Caddy 2.8.4 (`caddy validate`). Avec `Caddyfile.interne`, la pile complète démarre, et un client Node qui a `NODE_EXTRA_CA_CERTS` sur la racine exportée vérifie le certificat : l'administration répond 200, l'hôte des pages 401 sans session, et le HTTP renvoie vers le HTTPS (308). Les suites du serveur et de la CLI passent aussi sous Linux (image `node:24`).
+- **Vérifié le 27/11/2026, sur le Docker d'un poste Windows (moteur Linux)** : les deux `Caddyfile` sont valides pour Caddy 2.8.4 (`caddy validate`). Avec `Caddyfile.interne`, la pile complète démarre, et un client Node qui a `NODE_EXTRA_CA_CERTS` sur la racine exportée vérifie le certificat : l'administration répond 200, l'hôte des pages 401 sans session, et le HTTP renvoie vers le HTTPS (308). Les suites du serveur et de la CLI passent aussi sous Linux (image `node:24`). `installer-ubuntu.sh` a été rejoué de bout en bout dans une Ubuntu 24.04 neuve branchée sur ce Docker : paquets, réglages, image, Caddy interne, certificat exporté (vérifié par Node), relance sans effet, passage en mode http et retour, arrêt, relance.
 - **Pas encore essayé** : un certificat Let's Encrypt réel, un vrai serveur Ubuntu, un poste Windows avec la racine installée dans son magasin.

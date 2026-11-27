@@ -27,6 +27,22 @@ Si tu as déjà un serveur (dossier de données à toi), passe `-Donnees <ce dos
 - État de l'installation : `%LOCALAPPDATA%\Vaevia\` (`installation.json`, écrit une fois le serveur prêt et lu par `outil brancher` ; `serveur.log` ; `serveur.pid` ; `cli-path.txt` si l'installeur a ajouté la CLI au `PATH` ; `claude-skill.txt`, empreinte et chemin du raccourci Claude Code posé) ; données par défaut dans son sous-dossier `donnees`.
 - Test (Windows, `-Essai` : dossiers temporaires, jamais le port 8080, ni `PATH`, ni Démarrage, ni navigateur ; `-Etat` toujours, `-Donnees` pour l'installation ; raccourci Claude Code seulement avec `-Profil <dossier temporaire>`, qui tient lieu de `%USERPROFILE%` et ne peut mener ni dans le dépôt de l'outil ni au vrai `.claude`) : `WDD_TESTS_TMP=<dossier hors dépôt> node --test "outils/test/*.test.ts"`.
 
+## Installer le serveur d'équipe sur Ubuntu
+
+Sur la machine qui servira de serveur à l'équipe (Ubuntu 22.04 ou plus, Internet pendant l'installation) :
+
+```sh
+git clone <adresse de ce dépôt> vaevia && cd vaevia
+./installer-ubuntu.sh
+```
+
+Le script installe Docker, Compose et Git (apt) s'ils manquent, écrit `.env`, construit et lance le serveur derrière Caddy, puis affiche le lien du compte admin et ce qu'il faut faire sur chaque poste de l'équipe (noms, certificat, phrase de branchement). Relancé, il ne refait que ce qui manque ; les données restent dans les volumes Docker.
+
+- `--mode interne` (défaut) : HTTPS avec l'autorité interne de Caddy, pour un réseau local ; le certificat racine est écrit dans `racine-caddy.crt`, à installer sur chaque poste. `--mode internet` : Let's Encrypt (deux vrais noms de domaine). `--mode http` : essai en clair sur un réseau de confiance.
+- `--domaine vaevia.lan --domaine-pages vaevia-pages.lan` (défauts) : deux noms qui mènent à ce serveur (DNS interne, ou fichier `hosts` de chaque poste).
+- `--oui` (aucune question), `--port <n>`, `--sans-paquets` ; `--etat`, `--mettre-a-jour` (`git pull`, reconstruit, relance), `--arreter`, `--reconnecter` (lien admin perdu) ; `--aide`.
+- Détail : [docs/acces-distant.md](docs/acces-distant.md).
+
 ## Brancher un dépôt
 
 Il faut la CLI `outil` dans le `PATH` (l'installeur Windows le propose ; sinon, le dossier `cli/` de ce dépôt). Dans le dépôt du code, dis à ton agent, quel qu'il soit :

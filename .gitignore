@@ -11,3 +11,6 @@ dom_*.html
 .env
 .env.*
 !.env.exemple
+# certificat racine exporté par installer-ubuntu.sh (pas secret, mais propre à chaque serveur)
+racine-caddy.crt
+racine-caddy.crt.tmp

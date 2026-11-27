@@ -2,3 +2,6 @@
 *.cmd text eol=crlf
 *.bat text eol=crlf
 *.ps1 text eol=crlf
+# Scripts shell : LF partout (bash lit mal un CR en fin de ligne), même dans une copie de travail Windows.
+*.sh text eol=lf
+cli/outil text eol=lf
